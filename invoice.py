@@ -452,6 +452,13 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         if self.lines:
             for line in self.lines:
                 self.untaxed_amount += getattr(line, 'amount', None) or 0
+                for attribute, default_value in (
+                        ('taxes', []),
+                        ('unit_price', Decimal(0)),
+                        ('quantity', 0.),
+                        ):
+                    if not getattr(line, attribute, None):
+                        setattr(line, attribute, default_value)
             computed_taxes = self._get_taxes()
 
         def is_zero(amount):
@@ -726,22 +733,8 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
 
     @property
     def taxable_lines(self):
-        taxable_lines = []
-        # In case we're called from an on_change we have to use some sensible
-        # defaults
-        for line in self.lines:
-            if getattr(line, 'type', None) != 'line':
-                continue
-            taxable_lines.append(tuple())
-            for attribute, default_value in [
-                    ('taxes', []),
-                    ('unit_price', Decimal(0)),
-                    ('quantity', 0.),
-                    ]:
-                value = getattr(line, attribute, None)
-                taxable_lines[-1] += (
-                    value if value is not None else default_value,)
-        return taxable_lines
+        return [(l.taxes, l.unit_price, l.quantity) for l in self.lines
+            if l.type == 'line']
 
     @property
     def tax_type(self):
@@ -2398,7 +2391,7 @@ class PayInvoiceAsk(ModelView):
         return 'partial'
 
     @fields.depends('lines', 'amount', 'currency', 'currency_writeoff',
-        'invoice', 'payment_lines')
+        'invoice')
     def on_change_lines(self):
         Currency = Pool().get('currency.currency')
 
@@ -2408,8 +2401,6 @@ class PayInvoiceAsk(ModelView):
 
         self.amount_writeoff = Decimal('0.0')
         for line in self.lines:
-            self.amount_writeoff += line.debit - line.credit
-        for line in self.payment_lines:
             self.amount_writeoff += line.debit - line.credit
         if self.invoice.type in ('in_invoice', 'out_credit_note'):
             self.amount_writeoff = - self.amount_writeoff - amount
