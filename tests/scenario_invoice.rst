@@ -12,7 +12,7 @@ Imports::
     ...     get_company
     >>> from trytond.modules.account.tests.tools import create_fiscalyear, \
     ...     create_chart, get_accounts, create_tax, set_tax_code
-    >>> from.trytond.modules.account_invoice.tests.tools import \
+    >>> from trytond.modules.account_invoice.tests.tools import \
     ...     set_fiscalyear_invoice_sequences
     >>> today = datetime.date.today()
 
@@ -49,6 +49,7 @@ Create chart of accounts::
     >>> revenue = accounts['revenue']
     >>> expense = accounts['expense']
     >>> account_tax = accounts['tax']
+    >>> account_cash = accounts['cash']
 
 Create tax::
 
@@ -58,6 +59,23 @@ Create tax::
     >>> invoice_tax_code = tax.invoice_tax_code
     >>> credit_note_base_code = tax.credit_note_base_code
     >>> credit_note_tax_code = tax.credit_note_tax_code
+
+Set Cash journal::
+
+    >>> Journal = Model.get('account.journal')
+    >>> journal_cash, = Journal.find([('type', '=', 'cash')])
+    >>> journal_cash.credit_account = account_cash
+    >>> journal_cash.debit_account = account_cash
+    >>> journal_cash.save()
+
+Create Write-Off journal::
+
+    >>> Sequence = Model.get('ir.sequence')
+    >>> sequence_journal, = Sequence.find([('code', '=', 'account.journal')])
+    >>> journal_writeoff = Journal(name='Write-Off', type='write-off',
+    ...     sequence=sequence_journal,
+    ...     credit_account=revenue, debit_account=expense)
+    >>> journal_writeoff.save()
 
 Create party::
 
@@ -89,7 +107,7 @@ Create payment term::
 
     >>> PaymentTerm = Model.get('account.invoice.payment_term')
     >>> payment_term = PaymentTerm(name='Term')
-    >>> line = payment_term.lines.new(type='percent', percentage=Decimal(50))
+    >>> line = payment_term.lines.new(type='percent', ratio=Decimal('.5'))
     >>> delta = line.relativedeltas.new(days=20)
     >>> line = payment_term.lines.new(type='remainder')
     >>> delta = line.relativedeltas.new(days=40)
@@ -119,6 +137,18 @@ Create invoice::
     Decimal('20.00')
     >>> invoice.total_amount
     Decimal('240.00')
+    >>> invoice.save()
+
+Test change tax::
+
+    >>> tax_line, = invoice.taxes
+    >>> tax_line.tax == tax
+    True
+    >>> tax_line.tax = None
+    >>> tax_line.tax = tax
+
+Post invoice::
+
     >>> invoice.click('post')
     >>> invoice.state
     u'posted'
@@ -192,6 +222,62 @@ Credit invoice with refund::
     >>> credit_note_tax_code.sum
     Decimal('20.00')
 
+Pay invoice::
+
+    >>> invoice, = invoice.duplicate()
+    >>> invoice.click('post')
+
+    >>> pay = Wizard('account.invoice.pay', [invoice])
+    >>> pay.form.amount
+    Decimal('240.00')
+    >>> pay.form.amount = Decimal('120.00')
+    >>> pay.form.journal = journal_cash
+    >>> pay.execute('choice')
+    >>> pay.state
+    'end'
+
+    >>> pay = Wizard('account.invoice.pay', [invoice])
+    >>> pay.form.amount
+    Decimal('120.00')
+    >>> pay.form.amount = Decimal('20.00')
+    >>> pay.form.journal = journal_cash
+    >>> pay.execute('choice')
+    >>> pay.form.type = 'partial'
+    >>> pay.form.amount
+    Decimal('20.00')
+    >>> len(pay.form.lines_to_pay)
+    1
+    >>> len(pay.form.payment_lines)
+    0
+    >>> len(pay.form.lines)
+    1
+    >>> pay.form.amount_writeoff
+    Decimal('100.00')
+    >>> pay.execute('pay')
+
+    >>> pay = Wizard('account.invoice.pay', [invoice])
+    >>> pay.form.amount
+    Decimal('-20.00')
+    >>> pay.form.amount = Decimal('99.00')
+    >>> pay.form.journal = journal_cash
+    >>> pay.execute('choice')
+    >>> pay.form.type = 'writeoff'
+    >>> pay.form.journal_writeoff = journal_writeoff
+    >>> pay.form.amount
+    Decimal('99.00')
+    >>> len(pay.form.lines_to_pay)
+    1
+    >>> len(pay.form.payment_lines)
+    1
+    >>> len(pay.form.lines)
+    1
+    >>> pay.form.amount_writeoff
+    Decimal('1.00')
+    >>> pay.execute('pay')
+
+    >>> invoice.state
+    u'paid'
+
 Create empty invoice::
 
     >>> invoice = Invoice()
@@ -200,3 +286,29 @@ Create empty invoice::
     >>> invoice.click('post')
     >>> invoice.state
     u'paid'
+
+Create some complex invoice and test its taxes base rounding::
+
+    >>> invoice = Invoice()
+    >>> invoice.party = party
+    >>> invoice.payment_term = payment_term
+    >>> invoice.invoice_date = today
+    >>> line = invoice.lines.new()
+    >>> line.product = product
+    >>> line.quantity = 1
+    >>> line.unit_price = Decimal('0.0035')
+    >>> line = invoice.lines.new()
+    >>> line.product = product
+    >>> line.quantity = 1
+    >>> line.unit_price = Decimal('0.0035')
+    >>> invoice.save()
+    >>> invoice.untaxed_amount
+    Decimal('0.00')
+    >>> invoice.taxes[0].base == invoice.untaxed_amount
+    True
+    >>> found_invoice, = Invoice.find([('untaxed_amount', '=', Decimal(0))])
+    >>> found_invoice.id == invoice.id
+    True
+    >>> found_invoice, = Invoice.find([('total_amount', '=', Decimal(0))])
+    >>> found_invoice.id == invoice.id
+    True

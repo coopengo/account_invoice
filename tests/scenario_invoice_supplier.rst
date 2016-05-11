@@ -12,7 +12,7 @@ Imports::
     ...     get_company
     >>> from trytond.modules.account.tests.tools import create_fiscalyear, \
     ...     create_chart, get_accounts, create_tax, set_tax_code
-    >>> from.trytond.modules.account_invoice.tests.tools import \
+    >>> from trytond.modules.account_invoice.tests.tools import \
     ...     set_fiscalyear_invoice_sequences
     >>> today = datetime.date.today()
 
@@ -96,7 +96,7 @@ Create invoice::
     >>> Invoice = Model.get('account.invoice')
     >>> InvoiceLine = Model.get('account.invoice.line')
     >>> invoice = Invoice()
-    >>> invoice.type = 'in_invoice'
+    >>> invoice.type = 'in'
     >>> invoice.party = party
     >>> invoice.payment_term = payment_term
     >>> invoice.invoice_date = today
@@ -159,20 +159,21 @@ Credit invoice::
     >>> credit = Wizard('account.invoice.credit', [invoice])
     >>> credit.form.with_refund = False
     >>> credit.execute('credit')
-    >>> credit_note, = Invoice.find([('type', '=', 'in_credit_note')])
+    >>> credit_note, = Invoice.find(
+    ...     [('type', '=', 'in'), ('id', '!=', invoice.id)])
     >>> credit_note.state
     u'draft'
-    >>> credit_note.untaxed_amount == invoice.untaxed_amount
+    >>> credit_note.untaxed_amount == -invoice.untaxed_amount
     True
-    >>> credit_note.tax_amount == invoice.tax_amount
+    >>> credit_note.tax_amount == -invoice.tax_amount
     True
-    >>> credit_note.total_amount == invoice.total_amount
+    >>> credit_note.total_amount == -invoice.total_amount
     True
 
 Create a posted and a draft invoice  to cancel::
 
     >>> invoice = Invoice()
-    >>> invoice.type = 'in_invoice'
+    >>> invoice.type = 'in'
     >>> invoice.party = party
     >>> invoice.payment_term = payment_term
     >>> invoice.invoice_date = today
