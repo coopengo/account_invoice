@@ -8,7 +8,8 @@ Imports::
     >>> from dateutil.relativedelta import relativedelta
     >>> from decimal import Decimal
     >>> from operator import attrgetter
-    >>> from proteus import config, Model, Wizard
+    >>> from proteus import Model, Wizard
+    >>> from trytond.tests.tools import activate_modules
     >>> from trytond.modules.currency.tests.tools import get_currency
     >>> from trytond.modules.company.tests.tools import create_company, \
     ...     get_company
@@ -17,19 +18,11 @@ Imports::
     >>> from trytond.modules.account_invoice.tests.tools import \
     ...     set_fiscalyear_invoice_sequences
     >>> today = datetime.date.today()
-
-Create database::
-
-    >>> config = config.set_trytond()
-    >>> config.pool.test = True
+    >>> tomorrow = today + relativedelta(days=1)
 
 Install account_invoice::
 
-    >>> Module = Model.get('ir.module')
-    >>> account_invoice_module, = Module.find(
-    ...     [('name', '=', 'account_invoice')])
-    >>> account_invoice_module.click('install')
-    >>> Wizard('ir.module.install_upgrade').execute('upgrade')
+    >>> config = activate_modules('account_invoice')
 
 Create company::
 
@@ -37,6 +30,16 @@ Create company::
     >>> eur = get_currency('EUR')
     >>> _ = create_company(currency=currency)
     >>> company = get_company()
+
+Set alternate currency rates::
+
+    >>> rate = eur.rates.new()
+    >>> rate.date = today
+    >>> rate.rate = eur.rates[0].rate
+    >>> rate = eur.rates.new()
+    >>> rate.date = tomorrow
+    >>> rate.rate = eur.rates[0].rate + Decimal('0.5')
+    >>> eur.save()
 
 Create fiscal year::
 
@@ -51,6 +54,7 @@ Create chart of accounts::
     >>> revenue = accounts['revenue']
     >>> expense = accounts['expense']
     >>> account_tax = accounts['tax']
+    >>> account_cash = accounts['cash']
 
 Create tax::
 
@@ -60,6 +64,23 @@ Create tax::
     >>> invoice_tax_code = tax.invoice_tax_code
     >>> credit_note_base_code = tax.credit_note_base_code
     >>> credit_note_tax_code = tax.credit_note_tax_code
+
+Set Cash journal::
+
+    >>> Journal = Model.get('account.journal')
+    >>> journal_cash, = Journal.find([('type', '=', 'cash')])
+    >>> journal_cash.credit_account = account_cash
+    >>> journal_cash.debit_account = account_cash
+    >>> journal_cash.save()
+
+Create Write-Off journal::
+
+    >>> Sequence = Model.get('ir.sequence')
+    >>> sequence_journal, = Sequence.find([('code', '=', 'account.journal')])
+    >>> journal_writeoff = Journal(name='Write-Off', type='write-off',
+    ...     sequence=sequence_journal,
+    ...     credit_account=revenue, debit_account=expense)
+    >>> journal_writeoff.save()
 
 Create party::
 
@@ -87,22 +108,11 @@ Create product::
     >>> product.template = template
     >>> product.save()
 
-Create payment term::
-
-    >>> PaymentTerm = Model.get('account.invoice.payment_term')
-    >>> payment_term = PaymentTerm(name='Term')
-    >>> line = payment_term.lines.new(type='percent', ratio=Decimal('.5'))
-    >>> delta = line.relativedeltas.new(days=20)
-    >>> line = payment_term.lines.new(type='remainder')
-    >>> delta = line.relativedeltas.new(days=40)
-    >>> payment_term.save()
-
 Create invoice with alternate currency::
 
     >>> Invoice = Model.get('account.invoice')
     >>> invoice = Invoice()
     >>> invoice.party = party
-    >>> invoice.payment_term = payment_term
     >>> invoice.currency = eur
     >>> line = invoice.lines.new()
     >>> line.product = product
@@ -133,6 +143,28 @@ Create invoice with alternate currency::
     >>> invoice.total_amount
     Decimal('460.00')
 
+Pay the invoice with rate change::
+
+    >>> pay = Wizard('account.invoice.pay', [invoice])
+    >>> pay.form.amount
+    Decimal('460.00')
+    >>> pay.form.journal = journal_cash
+    >>> pay.form.date = tomorrow
+    >>> pay.execute('choice')
+    >>> pay.form.type = 'writeoff'
+    >>> pay.form.journal_writeoff = journal_writeoff
+    >>> pay.form.amount
+    Decimal('460.00')
+    >>> pay.form.currency == eur
+    True
+    >>> pay.form.amount_writeoff
+    Decimal('46.00')
+    >>> pay.form.currency_writeoff == currency
+    True
+    >>> pay.execute('pay')
+    >>> invoice.state
+    u'paid'
+
 Create negative tax::
 
     >>> negative_tax = set_tax_code(create_tax(Decimal('-.10')))
@@ -142,7 +174,6 @@ Create invoice with alternate currency and negative taxes::
 
     >>> invoice = Invoice()
     >>> invoice.party = party
-    >>> invoice.payment_term = payment_term
     >>> invoice.currency = eur
     >>> line = invoice.lines.new()
     >>> line.product = product

@@ -3,15 +3,15 @@
 from decimal import Decimal
 from dateutil.relativedelta import relativedelta
 
-from sql import Null, Column
-from sql.conditionals import Case
+from sql import Column
 
-from trytond.model import ModelView, ModelSQL, fields
+from trytond.model import ModelView, ModelSQL, fields, sequence_ordered
 from trytond import backend
 from trytond.pyson import Eval
 from trytond.transaction import Transaction
 from trytond.pool import Pool
 from trytond.wizard import Wizard, StateView, Button
+from trytond.config import config
 
 __all__ = ['PaymentTerm', 'PaymentTermLine', 'PaymentTermLineRelativeDelta',
     'TestPaymentTerm', 'TestPaymentTermView', 'TestPaymentTermViewResult']
@@ -73,7 +73,7 @@ class PaymentTerm(ModelSQL, ModelView):
         for line in self.lines:
             value = line.get_value(remainder, amount, currency)
             value_date = line.get_date(date)
-            if not value or not value_date:
+            if value is None or not value_date:
                 if (not remainder) and line.amount:
                     self.raise_user_error('invalid_line', {
                             'line': line.rec_name,
@@ -84,19 +84,22 @@ class PaymentTerm(ModelSQL, ModelView):
             if ((remainder - value) * sign) < Decimal('0.0'):
                 res.append((value_date, remainder))
                 break
-            res.append((value_date, value))
+            if value:
+                res.append((value_date, value))
             remainder -= value
+        else:
+            # Enforce to have at least one term
+            if not res:
+                res.append((date, Decimal(0)))
 
         if not currency.is_zero(remainder):
             self.raise_user_error('missing_remainder', (self.rec_name,))
         return res
 
 
-class PaymentTermLine(ModelSQL, ModelView):
+class PaymentTermLine(sequence_ordered(), ModelSQL, ModelView):
     'Payment Term Line'
     __name__ = 'account.invoice.payment_term.line'
-    sequence = fields.Integer('Sequence',
-        help='Use to order lines in ascending order')
     payment = fields.Many2One('account.invoice.payment_term', 'Payment Term',
             required=True, ondelete="CASCADE")
     type = fields.Selection([
@@ -128,12 +131,11 @@ class PaymentTermLine(ModelSQL, ModelView):
     currency_digits = fields.Function(fields.Integer('Currency Digits'),
         'on_change_with_currency_digits')
     relativedeltas = fields.One2Many(
-        'account.invoice.payment_term.line.relativedelta', 'line', 'Deltas')
+        'account.invoice.payment_term.line.delta', 'line', 'Deltas')
 
     @classmethod
     def __setup__(cls):
         super(PaymentTermLine, cls).__setup__()
-        cls._order.insert(0, ('sequence', 'ASC'))
         cls._error_messages.update({
                 'invalid_ratio_and_divisor': ('Ratio and '
                     'Divisor values are not consistent in line "%(line)s" '
@@ -179,11 +181,6 @@ class PaymentTermLine(ModelSQL, ModelView):
                     columns=[sql_table.ratio],
                     values=[sql_table.percentage / 100]))
             table.drop_column('percentage')
-
-    @staticmethod
-    def order_sequence(tables):
-        table, _ = tables[None]
-        return [Case((table.sequence == Null, 0), else_=1), table.sequence]
 
     @staticmethod
     def default_currency_digits():
@@ -242,7 +239,8 @@ class PaymentTermLine(ModelSQL, ModelView):
     def get_value(self, remainder, amount, currency):
         Currency = Pool().get('currency.currency')
         if self.type == 'fixed':
-            return Currency.compute(self.currency, self.amount, currency)
+            fixed = Currency.compute(self.currency, self.amount, currency)
+            return fixed.copy_sign(amount)
         elif self.type == 'percent':
             return currency.round(remainder * self.ratio)
         elif self.type == 'percent_on_total':
@@ -284,10 +282,9 @@ class PaymentTermLine(ModelSQL, ModelView):
                         })
 
 
-class PaymentTermLineRelativeDelta(ModelSQL, ModelView):
+class PaymentTermLineRelativeDelta(sequence_ordered(), ModelSQL, ModelView):
     'Payment Term Line Relative Delta'
-    __name__ = 'account.invoice.payment_term.line.relativedelta'
-    sequence = fields.Integer('Sequence')
+    __name__ = 'account.invoice.payment_term.line.delta'
     line = fields.Many2One('account.invoice.payment_term.line',
         'Payment Term Line', required=True, ondelete='CASCADE')
     day = fields.Integer('Day of Month',
@@ -325,11 +322,6 @@ class PaymentTermLineRelativeDelta(ModelSQL, ModelView):
     days = fields.Integer('Number of Days', required=True)
 
     @classmethod
-    def __setup__(cls):
-        super(PaymentTermLineRelativeDelta, cls).__setup__()
-        cls._order.insert(0, ('sequence', 'ASC'))
-
-    @classmethod
     def __register__(cls, module_name):
         TableHandler = backend.get('TableHandler')
         cursor = Transaction().connection.cursor()
@@ -337,6 +329,13 @@ class PaymentTermLineRelativeDelta(ModelSQL, ModelView):
         Line = pool.get('account.invoice.payment_term.line')
         sql_table = cls.__table__()
         line = Line.__table__()
+
+        # Migration from 4.0: rename long table
+        old_model_name = 'account.invoice.payment_term.line.relativedelta'
+        old_table = config.get(
+            'table', old_model_name, default=old_model_name.replace('.', '_'))
+        if TableHandler.table_exist(old_table):
+            TableHandler.table_rename(old_table, cls._table)
 
         super(PaymentTermLineRelativeDelta, cls).__register__(module_name)
 
@@ -353,11 +352,6 @@ class PaymentTermLineRelativeDelta(ModelSQL, ModelView):
                     values=line.select(*columns)))
             for field in fields:
                 line_table.drop_column(field, exception=True)
-
-    @staticmethod
-    def order_sequence(tables):
-        table, _ = tables[None]
-        return [Case((table.sequence == Null, 0), else_=1), table.sequence]
 
     @staticmethod
     def default_months():

@@ -1,8 +1,15 @@
-Version 4.0.2 - 2016-08-02
+Version 4.2.0 - 2016-11-28
 * Bug fixes (see mercurial logs for details)
-
-Version 4.0.1 - 2016-05-11
-* Bug fixes (see mercurial logs for details)
+* Add tax identifier on invoice
+* Rename Invoice.create_move to get_move
+* Rename InvoiceLine and InvoiceTax get_move_line to get_move_lines
+* Change Invoice.set_number into classmethod
+* Return original amount sign on fixed payment terms
+* Add configuration option to store invoice report cache in filestore
+* Manage readonly state on Invoice Line and Tax Line
+* Rename account.invoice.payment_term.line.relativedelta
+  into account.invoice.payment_term.line.delta
+* Make payment term not required
 
 Version 4.0.0 - 2016-05-02
 * Bug fixes (see mercurial logs for details)

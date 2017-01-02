@@ -7,7 +7,8 @@ Imports::
     >>> from dateutil.relativedelta import relativedelta
     >>> from decimal import Decimal
     >>> from operator import attrgetter
-    >>> from proteus import config, Model, Wizard
+    >>> from proteus import Model, Wizard
+    >>> from trytond.tests.tools import activate_modules
     >>> from trytond.modules.company.tests.tools import create_company, \
     ...     get_company
     >>> from trytond.modules.account.tests.tools import create_fiscalyear, \
@@ -16,23 +17,18 @@ Imports::
     ...     set_fiscalyear_invoice_sequences
     >>> today = datetime.date.today()
 
-Create database::
-
-    >>> config = config.set_trytond()
-    >>> config.pool.test = True
-
 Install account_invoice::
 
-    >>> Module = Model.get('ir.module')
-    >>> account_invoice_module, = Module.find(
-    ...     [('name', '=', 'account_invoice')])
-    >>> account_invoice_module.click('install')
-    >>> Wizard('ir.module.install_upgrade').execute('upgrade')
+    >>> config = activate_modules('account_invoice')
 
 Create company::
 
     >>> _ = create_company()
     >>> company = get_company()
+    >>> tax_identifier = company.party.identifiers.new()
+    >>> tax_identifier.type = 'eu_vat'
+    >>> tax_identifier.code = 'BE0897290877'
+    >>> company.party.save()
 
 Create fiscal year::
 
@@ -152,6 +148,8 @@ Post invoice::
     >>> invoice.click('post')
     >>> invoice.state
     u'posted'
+    >>> invoice.tax_identifier.code
+    u'BE0897290877'
     >>> invoice.untaxed_amount
     Decimal('220.00')
     >>> invoice.tax_amount
@@ -312,3 +310,36 @@ Create some complex invoice and test its taxes base rounding::
     >>> found_invoice, = Invoice.find([('total_amount', '=', Decimal(0))])
     >>> found_invoice.id == invoice.id
     True
+
+Clear company tax_identifier::
+
+    >>> tax_identifier, = company.party.identifiers
+    >>> tax_identifier.type = None
+    >>> tax_identifier.save()
+
+Create a paid invoice::
+
+    >>> invoice = Invoice()
+    >>> invoice.party = party
+    >>> invoice.payment_term = payment_term
+    >>> line = invoice.lines.new()
+    >>> line.product = product
+    >>> line.quantity = 5
+    >>> line.unit_price = Decimal('40')
+    >>> invoice.click('post')
+    >>> pay = Wizard('account.invoice.pay', [invoice])
+    >>> pay.form.journal = journal_cash
+    >>> pay.execute('choice')
+    >>> pay.state
+    'end'
+    >>> invoice.tax_identifier
+    >>> invoice.state
+    u'paid'
+
+The invoice is posted when the reconciliation is deleted::
+
+    >>> invoice.payment_lines[0].reconciliation.delete()
+    >>> invoice.reload()
+    >>> invoice.state
+    u'posted'
+    >>> invoice.tax_identifier

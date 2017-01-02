@@ -11,9 +11,11 @@ There are 4 types of invoice: *Invoice*, *Supplier Invoice*, *Credit Note* and
 *Paid* or *Canceled*.
 
 - Company: The company for which the invoice is created.
+- Tax Identifier: The tax identifier that will be printed on the invoice
+  (By default the first tax identifier of the company).
 - Number: The invoice number set on validation for supplier invoices and on
   posting for others using the sequence defined on the period or fiscal year.
-- Reference: The internal reference of the invoice.
+- Reference: The optional external reference of the invoice.
 - Party: The party for which or from which the invoice is issued.
 - Invoice Address: The address of the party.
 - Description: An optional description of the invoice.
@@ -122,5 +124,17 @@ A wizard is provided to test the behaviour of the payment term. It display
 computed terms base on an amount and a date.
 
 .. note:: The last line of payment term must be a remainder.
+
+Configuration
+*************
+
+The account_invoice module uses the section `account_invoice` to retrieve some
+parameters:
+
+- `filestore`: a boolean value to store invoice report cache in the FileStore.
+  The default value is `False`.
+
+- `store_prefix`: the prefix to use with the FileStore. The default value is
+  `None`.
 
 .. _`python-dateutil library`: http://labix.org/python-dateutil#head-72c4689ec5608067d118b9143cef6bdffb6dad4e
