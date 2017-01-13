@@ -5,72 +5,74 @@ msgstr "Content-Type: text/plain; charset=utf-8\n"
 msgctxt "error:account.fiscalyear:"
 msgid "Fiscal year \"%(first)s\" and \"%(second)s\" have the same invoice sequence."
 msgstr ""
-"Los ejercicios fiscales \"%(first)s\" y \"%(second)s\" tienen la misma "
-"secuencia de facturación."
+"Финансовый год \"%(first)s\" и \"%(second)s\" содержат одинаковые нумерации "
+"инвойсов."
 
 msgctxt "error:account.fiscalyear:"
 msgid ""
 "You can not change invoice sequence in fiscal year \"%s\" because there are "
 "already posted invoices in this fiscal year."
 msgstr ""
-"No puede cambiar la secuencia de factura en el ejercicio fiscal \"%s\" "
-"porque ya hay facturas contabilizadas en este ejercicio fiscal."
+"Вы не можете изменить нумерацию инвойсов в финансовом году \"%s\" так как в "
+"этом финансовом году уже есть отправленные инвойсы."
 
 msgctxt "error:account.invoice.credit:"
 msgid "You can not credit with refund invoice \"%s\" because it has payments."
-msgstr "No puede abonar la factura \"%s\" porque tiene pagos."
+msgstr ""
+"Вы не можете создать возврат для инвойса  \"%s\" так как он содержит "
+"платежи."
 
+#, fuzzy
 msgctxt "error:account.invoice.credit:"
 msgid ""
 "You can not credit with refund invoice \"%s\" because it is a supplier "
 "invoice/credit note."
 msgstr ""
-"No puede abonar con devolución la factura \"%s\" porque es una factura de "
-"proveedor."
+"Вы не можете создать возврат для инвойса  \"%s\" так как он содержит "
+"платежи."
 
 msgctxt "error:account.invoice.credit:"
 msgid "You can not credit with refund invoice \"%s\" because it is not posted."
-msgstr "No puede abonar de la factura \"%s\" porque no está contabilizada."
+msgstr "Вы не можете сделать возврат \"%s\" так как он не отправлен."
 
 msgctxt "error:account.invoice.line:"
 msgid "Line with \"line\" type must have an account."
-msgstr "La línea de tipo \"línea\" debe tener una cuenta."
+msgstr "Строки типа \"line\" должны иметь счет."
 
 msgctxt "error:account.invoice.line:"
 msgid "Line without \"line\" type must have an invoice."
-msgstr "La línea sin el tipo \"línea\" debe tener una factura."
+msgstr "Строка без \"строки\" должна содержать инвойс."
 
 msgctxt "error:account.invoice.line:"
 msgid ""
 "You can not add a line to invoice \"%(invoice)s\" that is posted, paid or "
 "cancelled."
 msgstr ""
-"No puede añadir una línea a la factura \"%(invoice)s\" porque está "
-"contabilizada, pagada o cancelada."
+"Вы не можете добавить строку к инвойсу \"%(invoice)s\", который был "
+"\"Отправлен\", \"Оплачен\" или \"Отменен\"."
 
 msgctxt "error:account.invoice.line:"
 msgid ""
 "You can not create invoice line \"%(line)s\" on invoice \"%(invoice)s\" "
 "because the invoice uses the same account (%(account)s)."
 msgstr ""
-"No puede crear la línea de factura \"%(line)s\" en la factura "
-"\"%(invoice)s\" porque la factura utiliza la misma cuenta (%(account)s)."
+"Вы не можете создать строчку \"%(line)s\" в инвойсе \"%(invoice)s\" так как "
+"инвойс использует тот же счет (%(account)s)."
 
 msgctxt "error:account.invoice.line:"
 msgid ""
 "You can not modify line \"%(line)s\" from invoice \"%(invoice)s\" that is "
 "posted or paid."
 msgstr ""
-"No puede modificar la línea \"%(line)s\" de la factura \"%(invoice)s\", "
-"porque está contabilizada o pagada."
+"Вы не можете изменить строку \"%(line)s\" инвойса \"%(invoice)s\" который "
+"был отправлен или оплачен."
 
 msgctxt "error:account.invoice.pay:"
 msgid ""
 "On invoice \"%s\" you can not create a partial payment with an amount "
 "greater than the amount to pay."
 msgstr ""
-"No puede crear un pago parcial en la factura \"%s\" por un importe mayor al "
-"importe a pagar."
+"У инвойса \"%s\" нельзя создать частичную оплату превышающую общую оплату."
 
 #, fuzzy
 msgctxt "error:account.invoice.payment_term.line:"
@@ -78,20 +80,20 @@ msgid ""
 "Ratio and Divisor values are not consistent in line \"%(line)s\" of payment "
 "term \"%(term)s\"."
 msgstr ""
-"Porcentaje y divisor no son consistentes en la línea \"%(line)s\" del plazo "
-"de pago \"%(term)s\"."
+"Проценты и делитель не совместимы в строке \"%(line)s\" правила оплаты "
+"\"%(term)s\"."
 
 msgctxt "error:account.invoice.payment_term:"
 msgid "Invalid line \"%(line)s\" in payment term \"%(term)s\"."
-msgstr "La línea \"%(line)s\" del plazo de pago \"%(term)s\" no es correcta."
+msgstr "Некорректная строка \"%(line)s\" в правиле оплаты \"%(term)s\"."
 
 msgctxt "error:account.invoice.payment_term:"
 msgid "Last line of payment term \"%s\" must be of type remainder."
-msgstr "La última línea del plazo de pago \"%s\" debe ser de tipo remanente."
+msgstr ""
 
 msgctxt "error:account.invoice.payment_term:"
 msgid "Missing remainder line in payment term \"%s\"."
-msgstr "Falta la línea de remanente en el plazo de pago \"%s\"."
+msgstr "Отсутствует строчка остатка в правиле оплаты \"%s\"."
 
 #, fuzzy
 msgctxt "error:account.invoice.tax:"
@@ -99,8 +101,8 @@ msgid ""
 "You can not add tax to invoice \"%(invoice)s\" because it is posted, paid or"
 " canceled."
 msgstr ""
-"No puede añadir la línea \"%(line)s\" a la factura \"%(invoice)s\" porque "
-"está contabilizada, pagada o cancelada."
+"Вы не можете добавить строчку \"%(line)s\" в инвойс \"%(invoice)s\" так как "
+"он \"Отправлен\", \"Оплачен\" или \"Отменен\"."
 
 msgctxt "error:account.invoice.tax:"
 msgid ""
@@ -108,9 +110,9 @@ msgid ""
 "\"%(invoice_company)s\" using base tax code \"%(base_code)s\" from company "
 "\"%(base_code_company)s\"."
 msgstr ""
-"No puede crear la factura \"%(Invoice)s\" de la empresa "
-"\"%(invoice_company)s\" utilizando el código de impuestos base "
-"\"%(base_code)s\" de la empresa \"%(base_code_company)s\"."
+"Вы не можете создать инвойс \"%(invoice)s\" для организации "
+"\"%(invoice_company)s\" используя базовый код налога \"%(base_code)s\" для "
+"организации \"%(base_code_company)s\"."
 
 msgctxt "error:account.invoice.tax:"
 msgid ""
@@ -118,192 +120,194 @@ msgid ""
 "\"%(invoice_company)s\" using tax code \"%(tax_code)s\" from company "
 "\"%(tax_code_company)s\"."
 msgstr ""
-"No puede crear la factura \"%(Invoice)s\" de la empresa "
-"\"%(invoice_company)s\" utilizando el código de impuestos \"%(tax_code)s\" "
-"de la empresa \"%(tax_code_company)s\"."
+"Вы не можете создать инвойс \"%(invoice)s\" для организации "
+"\"%(invoice_company)s\" используя код налога \"%(tax_code)s\" от организации"
+" \"%(tax_code_company)s\"."
 
 msgctxt "error:account.invoice.tax:"
 msgid ""
 "You can not modify tax \"%(tax)s\" from invoice \"%(invoice)s\" because it "
 "is posted or paid."
 msgstr ""
-"No puede modificar el impuesto \"%(tax)s\" de la factura \"%(invoice)s\" "
-"porque está contabilizada o pagada."
+"Вы не можете изменить налог \"%(tax)s\" у инвойса \"%(invoice)s\" так как он"
+" отправлен или оплачен."
 
 msgctxt "error:account.invoice:"
 msgid "Customer invoice/credit note \"%s\" can not be cancelled once posted."
 msgstr ""
-"No se puede cancelar la factura o nota de crédito  \"%s\" porque ya está "
-"contabilizada."
 
 msgctxt "error:account.invoice:"
 msgid ""
 "Invoice \"%(invoice)s\" uses the same account \"%(account)s\" for the "
 "invoice and in line \"%(line)s\"."
 msgstr ""
-"La factura \"%(invoice)s\" y la línea \"%(line)s\" utilizan la misma cuenta "
-"\"%(account)s \"."
+"Инвойс \"%(invoice)s\" использует тот же счет \"%(account)s\" для инвойса и "
+"в строке \"%(line)s\"."
 
 msgctxt "error:account.invoice:"
 msgid ""
 "Invoice \"%s\" has taxes defined but not on invoice lines.\n"
 "Re-compute the invoice."
 msgstr ""
-"La factura \"%s\" tiene impuestos que no corresponden a las líneas de factura.\n"
-"Recalcule la factura."
+"Инвойс \"%s\" содержит налоги, но не в строках инвойса.\n"
+"Пересчитайте инвойс."
 
 msgctxt "error:account.invoice:"
 msgid ""
 "Invoice \"%s\" has taxes on invoice lines that are not in the invoice.\n"
 "Re-compute the invoice."
 msgstr ""
-"Las líneas de la factura \"%s\" tienen impuestos  que no corresponden con la factura.\n"
-"Recalcule la factura."
+"Инвойс \"%s\" содержит налоги в строках инвойса, которые не содержатся в инвойсе.\n"
+"Пересчитайте инвойс."
 
 msgctxt "error:account.invoice:"
 msgid "Invoice \"%s\" must be cancelled before deletion."
-msgstr "Debe cancelar la factura \"%s\" antes de borrarla."
+msgstr "Инвойс \"%s\" должен быть отменен перед удалением."
 
 msgctxt "error:account.invoice:"
 msgid ""
 "Invoice \"%s\" tax bases are different from invoice lines.\n"
 "Re-compute the invoice."
 msgstr ""
-"La base de los impuestos de la factura \"%s\" no corresponde con las líneas de la factura.\n"
-"Recalcule la factura."
+"Базы налога у инвойса \"%s\" отличаются от строк инвойса.\n"
+"Пересчитайте инвойс."
 
 msgctxt "error:account.invoice:"
 msgid ""
 "The credit account on journal \"%(journal)s\" is the same as invoice "
 "\"%(invoice)s\"'s account."
 msgstr ""
-"La cuenta haber del diario \"%(journal)s\" tiene la misma cuenta de la "
-"factura \"%(invoice)s\"."
+"Кредитный счет у журнала \"%(journal)s\" точно такой же как счет инвойса "
+"\"%(invoice)s\"."
 
 #, fuzzy
 msgctxt "error:account.invoice:"
 msgid "The credit account on journal \"%s\" is missing."
-msgstr "Falta la cuenta haber del diario \"%s\"."
+msgstr "Отсутствует кредитный счет в журнале \"%s\"."
 
 msgctxt "error:account.invoice:"
 msgid ""
 "The debit account on journal \"%(journal)s\" is the same as invoice "
 "\"%(invoice)s\"'s account."
 msgstr ""
-"La cuenta debe del diario \"%(journal)s\" es la misma cuenta de la factura "
+"Дебетовый счет у журнала \"%(journal)s\" такой же как счет инвойса "
 "\"%(invoice)s\"."
 
 msgctxt "error:account.invoice:"
 msgid "The debit account on journal \"%s\" is missing."
-msgstr "Falta la cuenta debe del diario \"%s\"."
+msgstr "Отсутствует дебетовый счет для журнала \"%s\"."
 
 msgctxt "error:account.invoice:"
 msgid "The numbered invoice \"%s\" can not be deleted."
-msgstr "No se puede eliminar la factura numerada \"%s\"."
+msgstr "Пронумерованный инвойс \"%s\" не может быть удален."
 
 msgctxt "error:account.invoice:"
 msgid ""
 "There is no invoice sequence for invoice \"%(invoice)s\" on the "
 "period/fiscal year \"%(period)s\"."
 msgstr ""
-"No hay secuencia de factura para la factura \"%(invoice)s\" en el "
-"período/ejercicio fiscal \"%(period)s\"."
+"Не существует нумерации инвойсов для инвойса \"%(invoice)s\" за "
+"период/финансовый год \"%(period)s\"."
 
 msgctxt "error:account.invoice:"
 msgid "You can not modify invoice \"%s\" because it is posted, paid or cancelled."
 msgstr ""
-"No puede modificar la factura \"%s\" porque está contabilizada, pagada o "
-"cancelada."
+"Вы не можете изменить инвойс \"%s\" так как он \"Отправлен\", \"Оплачен\" "
+"или \"Отменен\"."
 
 msgctxt "error:account.period:"
 msgid "Period \"%(first)s\" and \"%(second)s\" have the same invoice sequence."
 msgstr ""
-"Los períodos \"%(first)s\" y \"%(second)s\" tienen la misma secuencia de "
-"factura."
+"Периоды \"%(first)s\" и \"%(second)s\" имеют одинаковые последовательности "
+"инвойсов."
 
 msgctxt "error:account.period:"
 msgid ""
 "Period \"%(period)s\" must have the same company as its fiscal year "
 "(%(fiscalyear)s)."
 msgstr ""
-"Período \"%(period)s\" y ejercicio fiscal (%(fiscalyear)s) deben tener la "
-"misma empresa."
+"Период \"%(period)s\" должен содержать ту же организацию что и в финансовом "
+"году (%(fiscalyear)s)."
 
 msgctxt "error:account.period:"
 msgid ""
 "You can not change the invoice sequence in period \"%s\" because there is "
 "already an invoice posted in this period"
 msgstr ""
-"No puede cambiar la secuencia de facturas en el período \"%s\" porque ya hay"
-" facturas contabilizadas en este período."
+"Вы не можете изменить нумерацию в периоде \"%s\" так как уже есть "
+"отправленные инвойсы в этом периоде."
 
 msgctxt "field:account.fiscalyear,in_credit_note_sequence:"
 msgid "Supplier Credit Note Sequence"
-msgstr "Secuencia de nota de crédito de proveedor"
+msgstr "Нумерация сторно поставщиков"
 
 msgctxt "field:account.fiscalyear,in_invoice_sequence:"
 msgid "Supplier Invoice Sequence"
-msgstr "Secuencia de factura de proveedor"
+msgstr "Нумерация инвойсов поставщика"
 
 msgctxt "field:account.fiscalyear,out_credit_note_sequence:"
 msgid "Customer Credit Note Sequence"
-msgstr "Secuencia de nota de crédito de cliente"
+msgstr "Нумерация сторно заказчиков"
 
 msgctxt "field:account.fiscalyear,out_invoice_sequence:"
 msgid "Customer Invoice Sequence"
-msgstr "Secuencia de factura de cliente"
+msgstr "Нумерация инвойса заказчика"
 
 msgctxt "field:account.invoice,account:"
 msgid "Account"
-msgstr "Cuenta"
+msgstr "Счет"
 
 msgctxt "field:account.invoice,accounting_date:"
 msgid "Accounting Date"
-msgstr "Fecha contabilización"
+msgstr "Дата расчетов"
 
 msgctxt "field:account.invoice,amount_to_pay:"
 msgid "Amount to Pay"
-msgstr "Importe a pagar"
+msgstr "Сумма к оплате"
 
 msgctxt "field:account.invoice,amount_to_pay_today:"
 msgid "Amount to Pay Today"
-msgstr "Importe a pagar hoy"
+msgstr "Сумма к оплате сегодня"
 
 msgctxt "field:account.invoice,cancel_move:"
 msgid "Cancel Move"
-msgstr "Asiento cancelación"
+msgstr "Отменить проводку"
 
 msgctxt "field:account.invoice,comment:"
 msgid "Comment"
-msgstr "Comentario"
+msgstr "Комментарии"
 
 msgctxt "field:account.invoice,company:"
 msgid "Company"
-msgstr "Empresa"
+msgstr "Организация"
+
+msgctxt "field:account.invoice,company_party:"
+msgid "Company Party"
+msgstr ""
 
 msgctxt "field:account.invoice,create_date:"
 msgid "Create Date"
-msgstr "Fecha creación"
+msgstr "Дата создания"
 
 msgctxt "field:account.invoice,create_uid:"
 msgid "Create User"
-msgstr "Usuario creación"
+msgstr "Создано пользователем"
 
 msgctxt "field:account.invoice,currency:"
 msgid "Currency"
-msgstr "Moneda"
+msgstr "Валюта"
 
 msgctxt "field:account.invoice,currency_date:"
 msgid "Currency Date"
-msgstr "Fecha moneda"
+msgstr "Дата курса валюты"
 
 msgctxt "field:account.invoice,currency_digits:"
 msgid "Currency Digits"
-msgstr "Decimales de la moneda"
+msgstr "Кол-во цифр валюты"
 
 msgctxt "field:account.invoice,description:"
 msgid "Description"
-msgstr "Descripción"
+msgstr "Описание"
 
 msgctxt "field:account.invoice,id:"
 msgid "ID"
@@ -311,115 +315,125 @@ msgstr "ID"
 
 msgctxt "field:account.invoice,invoice_address:"
 msgid "Invoice Address"
-msgstr "Dirección de facturación"
+msgstr "Адрес для инвойса"
 
 msgctxt "field:account.invoice,invoice_date:"
 msgid "Invoice Date"
-msgstr "Fecha factura"
+msgstr "Дата инвойса"
 
 msgctxt "field:account.invoice,invoice_report_cache:"
 msgid "Invoice Report"
-msgstr "Informe factura"
+msgstr "Отчет Инвойса"
+
+#, fuzzy
+msgctxt "field:account.invoice,invoice_report_cache_id:"
+msgid "Invoice Report ID"
+msgstr "Отчет Инвойса"
 
 msgctxt "field:account.invoice,invoice_report_format:"
 msgid "Invoice Report Format"
-msgstr "Formato del informe factura"
+msgstr "Формат отчета Инвойса"
 
 msgctxt "field:account.invoice,journal:"
 msgid "Journal"
-msgstr "Diario"
+msgstr "Журнал"
 
 msgctxt "field:account.invoice,lines:"
 msgid "Lines"
-msgstr "Líneas"
+msgstr "Строки"
 
 msgctxt "field:account.invoice,lines_to_pay:"
 msgid "Lines to Pay"
-msgstr "Líneas a pagar"
+msgstr "Строки к оплате"
 
 msgctxt "field:account.invoice,move:"
 msgid "Move"
-msgstr "Asiento"
+msgstr "Перемещение"
 
 msgctxt "field:account.invoice,number:"
 msgid "Number"
-msgstr "Número"
+msgstr "Номер"
 
+#, fuzzy
 msgctxt "field:account.invoice,origins:"
 msgid "Origins"
-msgstr "Origen"
+msgstr "Первоисточник"
 
 msgctxt "field:account.invoice,party:"
 msgid "Party"
-msgstr "Entidad"
+msgstr "Контрагент"
 
 msgctxt "field:account.invoice,party_lang:"
 msgid "Party Language"
-msgstr "Idioma de la entidad"
+msgstr "Язык контрагента"
 
 msgctxt "field:account.invoice,payment_lines:"
 msgid "Payment Lines"
-msgstr "Líneas de pago"
+msgstr "Строки оплаты"
 
 msgctxt "field:account.invoice,payment_term:"
 msgid "Payment Term"
-msgstr "Plazo de pago"
+msgstr "Правило оплаты"
 
 msgctxt "field:account.invoice,rec_name:"
 msgid "Name"
-msgstr "Nombre"
+msgstr "Наименование"
 
 msgctxt "field:account.invoice,reconciled:"
 msgid "Reconciled"
-msgstr "Conciliado"
+msgstr "Сверено"
 
 msgctxt "field:account.invoice,reference:"
 msgid "Reference"
-msgstr "Referencia"
+msgstr "Ссылка"
 
 msgctxt "field:account.invoice,state:"
 msgid "State"
-msgstr "Estado"
+msgstr "Состояние"
 
 msgctxt "field:account.invoice,tax_amount:"
 msgid "Tax"
-msgstr "Impuesto"
+msgstr "Налог"
+
+msgctxt "field:account.invoice,tax_identifier:"
+msgid "Tax Identifier"
+msgstr ""
 
 msgctxt "field:account.invoice,taxes:"
 msgid "Tax Lines"
-msgstr "Líneas de impuesto"
+msgstr "Строки налога"
 
 msgctxt "field:account.invoice,total_amount:"
 msgid "Total"
-msgstr "Total"
+msgstr "Итого"
 
 msgctxt "field:account.invoice,type:"
 msgid "Type"
-msgstr "Tipo"
+msgstr "Тип"
 
 msgctxt "field:account.invoice,type_name:"
 msgid "Type"
-msgstr "Tipo"
+msgstr "Тип"
 
 msgctxt "field:account.invoice,untaxed_amount:"
 msgid "Untaxed"
-msgstr "Base imponible"
+msgstr "Без налога"
 
 msgctxt "field:account.invoice,write_date:"
 msgid "Write Date"
-msgstr "Fecha modificación"
+msgstr "Дата изменения"
 
 msgctxt "field:account.invoice,write_uid:"
 msgid "Write User"
-msgstr "Usuario modificación"
+msgstr "Изменено пользователем"
 
 msgctxt "field:account.invoice-account.move.line,create_date:"
 msgid "Create Date"
-msgstr "Fecha creación"
+msgstr "Дата создания"
 
 msgctxt "field:account.invoice-account.move.line,create_uid:"
 msgid "Create User"
-msgstr "Usuario creación"
+msgstr "Создано пользователем"
 
 msgctxt "field:account.invoice-account.move.line,id:"
 msgid "ID"
@@ -427,23 +441,23 @@ msgstr "ID"
 
 msgctxt "field:account.invoice-account.move.line,invoice:"
 msgid "Invoice"
-msgstr "Factura"
+msgstr "Инвойс"
 
 msgctxt "field:account.invoice-account.move.line,line:"
 msgid "Payment Line"
-msgstr "Línea de pago"
+msgstr "Строка оплаты"
 
 msgctxt "field:account.invoice-account.move.line,rec_name:"
 msgid "Name"
-msgstr "Nombre"
+msgstr "Наименование"
 
 msgctxt "field:account.invoice-account.move.line,write_date:"
 msgid "Write Date"
-msgstr "Fecha modificación"
+msgstr "Дата изменения"
 
 msgctxt "field:account.invoice-account.move.line,write_uid:"
 msgid "Write User"
-msgstr "Usuario modificación"
+msgstr "Изменено пользователем"
 
 msgctxt "field:account.invoice.credit.start,id:"
 msgid "ID"
@@ -451,39 +465,39 @@ msgstr "ID"
 
 msgctxt "field:account.invoice.credit.start,with_refund:"
 msgid "With Refund"
-msgstr "Con devolución"
+msgstr "С возмещением"
 
 msgctxt "field:account.invoice.line,account:"
 msgid "Account"
-msgstr "Cuenta"
+msgstr "Счет"
 
 msgctxt "field:account.invoice.line,amount:"
 msgid "Amount"
-msgstr "Importe"
+msgstr "Сумма"
 
 msgctxt "field:account.invoice.line,company:"
 msgid "Company"
-msgstr "Empresa"
+msgstr "Организация"
 
 msgctxt "field:account.invoice.line,create_date:"
 msgid "Create Date"
-msgstr "Fecha creación"
+msgstr "Дата создания"
 
 msgctxt "field:account.invoice.line,create_uid:"
 msgid "Create User"
-msgstr "Usuario creación"
+msgstr "Создано пользователем"
 
 msgctxt "field:account.invoice.line,currency:"
 msgid "Currency"
-msgstr "Moneda"
+msgstr "Валюта"
 
 msgctxt "field:account.invoice.line,currency_digits:"
 msgid "Currency Digits"
-msgstr "Decimales de la moneda"
+msgstr "Кол-во цифр валюты"
 
 msgctxt "field:account.invoice.line,description:"
 msgid "Description"
-msgstr "Descripción"
+msgstr "Описание"
 
 msgctxt "field:account.invoice.line,id:"
 msgid "ID"
@@ -491,87 +505,92 @@ msgstr "ID"
 
 msgctxt "field:account.invoice.line,invoice:"
 msgid "Invoice"
-msgstr "Factura"
+msgstr "Инвойс"
+
+#, fuzzy
+msgctxt "field:account.invoice.line,invoice_state:"
+msgid "Invoice State"
+msgstr "Состояние инвойса"
 
 msgctxt "field:account.invoice.line,invoice_taxes:"
 msgid "Invoice Taxes"
-msgstr "Impuestos de factura"
+msgstr "Налоги по инвойсу"
 
 msgctxt "field:account.invoice.line,invoice_type:"
 msgid "Invoice Type"
-msgstr "Tipo de factura"
+msgstr "Тип инвойса"
 
 msgctxt "field:account.invoice.line,note:"
 msgid "Note"
-msgstr "Nota"
+msgstr "Комментарий"
 
 msgctxt "field:account.invoice.line,origin:"
 msgid "Origin"
-msgstr "Origen"
+msgstr "Первоисточник"
 
 msgctxt "field:account.invoice.line,party:"
 msgid "Party"
-msgstr "Entidad"
+msgstr "Контрагент"
 
 msgctxt "field:account.invoice.line,party_lang:"
 msgid "Party Language"
-msgstr "Idioma de la entidad"
+msgstr "Язык контрагента"
 
 msgctxt "field:account.invoice.line,product:"
 msgid "Product"
-msgstr "Producto"
+msgstr "Продукт"
 
 msgctxt "field:account.invoice.line,product_uom_category:"
 msgid "Product Uom Category"
-msgstr "Categoría UdM del producto"
+msgstr "Категория ед. измерения продукции"
 
 msgctxt "field:account.invoice.line,quantity:"
 msgid "Quantity"
-msgstr "Cantidad"
+msgstr "Кол-во"
 
 msgctxt "field:account.invoice.line,rec_name:"
 msgid "Name"
-msgstr "Nombre"
+msgstr "Наименование"
 
 msgctxt "field:account.invoice.line,sequence:"
 msgid "Sequence"
-msgstr "Secuencia"
+msgstr "Нумерация"
 
 msgctxt "field:account.invoice.line,taxes:"
 msgid "Taxes"
-msgstr "Impuestos"
+msgstr "Налоги"
 
 msgctxt "field:account.invoice.line,type:"
 msgid "Type"
-msgstr "Tipo"
+msgstr "Тип"
 
 msgctxt "field:account.invoice.line,unit:"
 msgid "Unit"
-msgstr "Unidad"
+msgstr "Единица измерения"
 
 msgctxt "field:account.invoice.line,unit_digits:"
 msgid "Unit Digits"
-msgstr "Decimales de la unidad"
+msgstr "Кол-во цифр после запятой"
 
 msgctxt "field:account.invoice.line,unit_price:"
 msgid "Unit Price"
-msgstr "Precio unidad"
+msgstr "Цена за единицу"
 
 msgctxt "field:account.invoice.line,write_date:"
 msgid "Write Date"
-msgstr "Fecha modificación"
+msgstr "Дата изменения"
 
 msgctxt "field:account.invoice.line,write_uid:"
 msgid "Write User"
-msgstr "Usuario modificación"
+msgstr "Изменено пользователем"
 
 msgctxt "field:account.invoice.line-account.tax,create_date:"
 msgid "Create Date"
-msgstr "Fecha creación"
+msgstr "Дата создания"
 
 msgctxt "field:account.invoice.line-account.tax,create_uid:"
 msgid "Create User"
-msgstr "Usuario creación"
+msgstr "Создано пользователем"
 
 msgctxt "field:account.invoice.line-account.tax,id:"
 msgid "ID"
@@ -579,51 +598,56 @@ msgstr "ID"
 
 msgctxt "field:account.invoice.line-account.tax,line:"
 msgid "Invoice Line"
-msgstr "Línea de factura"
+msgstr "Строка инвойса"
 
 msgctxt "field:account.invoice.line-account.tax,rec_name:"
 msgid "Name"
-msgstr "Nombre"
+msgstr "Наименование"
 
 msgctxt "field:account.invoice.line-account.tax,tax:"
 msgid "Tax"
-msgstr "Impuesto"
+msgstr "Налог"
 
 msgctxt "field:account.invoice.line-account.tax,write_date:"
 msgid "Write Date"
-msgstr "Fecha modificación"
+msgstr "Дата изменения"
 
 msgctxt "field:account.invoice.line-account.tax,write_uid:"
 msgid "Write User"
-msgstr "Usuario modificación"
+msgstr "Изменено пользователем"
 
 msgctxt "field:account.invoice.pay.ask,amount:"
 msgid "Payment Amount"
-msgstr "Importe del pago"
+msgstr "Сумма оплаты"
 
 msgctxt "field:account.invoice.pay.ask,amount_writeoff:"
 msgid "Write-Off Amount"
-msgstr "Importe del desajuste"
+msgstr "Сумма списания"
 
 msgctxt "field:account.invoice.pay.ask,company:"
 msgid "Company"
-msgstr "Empresa"
+msgstr "Организация"
 
 msgctxt "field:account.invoice.pay.ask,currency:"
 msgid "Payment Currency"
-msgstr "Moneda de pago"
+msgstr "Валюта оплаты"
 
 msgctxt "field:account.invoice.pay.ask,currency_digits:"
 msgid "Payment Currency Digits"
-msgstr "Decimales de la moneda de pago"
+msgstr "Точность валюты оплаты"
 
 msgctxt "field:account.invoice.pay.ask,currency_digits_writeoff:"
 msgid "Write-Off Currency Digits"
-msgstr "Decimales de la moneda del desajuste"
+msgstr "Кол-во цифр валюты списания"
 
 msgctxt "field:account.invoice.pay.ask,currency_writeoff:"
 msgid "Write-Off Currency"
-msgstr "Moneda del desajuste"
+msgstr "Валюта списания"
+
+#, fuzzy
+msgctxt "field:account.invoice.pay.ask,date:"
+msgid "Date"
+msgstr "Дата"
 
 msgctxt "field:account.invoice.pay.ask,id:"
 msgid "ID"
@@ -631,47 +655,47 @@ msgstr "ID"
 
 msgctxt "field:account.invoice.pay.ask,invoice:"
 msgid "Invoice"
-msgstr "Factura"
+msgstr "Инвойс"
 
 msgctxt "field:account.invoice.pay.ask,journal_writeoff:"
 msgid "Write-Off Journal"
-msgstr "Diario de desajustes"
+msgstr "Журнал списания"
 
 msgctxt "field:account.invoice.pay.ask,lines:"
 msgid "Lines"
-msgstr "Líneas"
+msgstr "Строки"
 
 msgctxt "field:account.invoice.pay.ask,lines_to_pay:"
 msgid "Lines to Pay"
-msgstr "Líneas a pagar"
+msgstr "Строки к оплате"
 
 msgctxt "field:account.invoice.pay.ask,payment_lines:"
 msgid "Payment Lines"
-msgstr "Líneas de pago"
+msgstr "Строки оплаты"
 
 msgctxt "field:account.invoice.pay.ask,type:"
 msgid "Type"
-msgstr "Tipo"
+msgstr "Тип"
 
 msgctxt "field:account.invoice.pay.start,amount:"
 msgid "Amount"
-msgstr "Importe"
+msgstr "Сумма"
 
 msgctxt "field:account.invoice.pay.start,currency:"
 msgid "Currency"
-msgstr "Moneda"
+msgstr "Валюта"
 
 msgctxt "field:account.invoice.pay.start,currency_digits:"
 msgid "Currency Digits"
-msgstr "Decimales de la moneda"
+msgstr "Кол-во цифр валюты"
 
 msgctxt "field:account.invoice.pay.start,date:"
 msgid "Date"
-msgstr "Fecha"
+msgstr "Дата"
 
 msgctxt "field:account.invoice.pay.start,description:"
 msgid "Description"
-msgstr "Descripción"
+msgstr "Описание"
 
 msgctxt "field:account.invoice.pay.start,id:"
 msgid "ID"
@@ -679,23 +703,23 @@ msgstr "ID"
 
 msgctxt "field:account.invoice.pay.start,journal:"
 msgid "Journal"
-msgstr "Diario"
+msgstr "Журнал"
 
 msgctxt "field:account.invoice.payment_term,active:"
 msgid "Active"
-msgstr "Activo"
+msgstr "Действующий"
 
 msgctxt "field:account.invoice.payment_term,create_date:"
 msgid "Create Date"
-msgstr "Fecha creación"
+msgstr "Дата создания"
 
 msgctxt "field:account.invoice.payment_term,create_uid:"
 msgid "Create User"
-msgstr "Usuario creación"
+msgstr "Создано пользователем"
 
 msgctxt "field:account.invoice.payment_term,description:"
 msgid "Description"
-msgstr "Descripción"
+msgstr "Описание"
 
 msgctxt "field:account.invoice.payment_term,id:"
 msgid "ID"
@@ -703,47 +727,48 @@ msgstr "ID"
 
 msgctxt "field:account.invoice.payment_term,lines:"
 msgid "Lines"
-msgstr "Líneas"
+msgstr "Строки"
 
+#, fuzzy
 msgctxt "field:account.invoice.payment_term,name:"
 msgid "Name"
-msgstr "Nombre"
+msgstr "Правило оплаты"
 
 msgctxt "field:account.invoice.payment_term,rec_name:"
 msgid "Name"
-msgstr "Nombre"
+msgstr "Наименование"
 
 msgctxt "field:account.invoice.payment_term,write_date:"
 msgid "Write Date"
-msgstr "Fecha modificación"
+msgstr "Дата изменения"
 
 msgctxt "field:account.invoice.payment_term,write_uid:"
 msgid "Write User"
-msgstr "Usuario modificación"
+msgstr "Изменено пользователем"
 
 msgctxt "field:account.invoice.payment_term.line,amount:"
 msgid "Amount"
-msgstr "Importe"
+msgstr "Сумма"
 
 msgctxt "field:account.invoice.payment_term.line,create_date:"
 msgid "Create Date"
-msgstr "Fecha creación"
+msgstr "Дата создания"
 
 msgctxt "field:account.invoice.payment_term.line,create_uid:"
 msgid "Create User"
-msgstr "Usuario creación"
+msgstr "Создано пользователем"
 
 msgctxt "field:account.invoice.payment_term.line,currency:"
 msgid "Currency"
-msgstr "Moneda"
+msgstr "Валюта"
 
 msgctxt "field:account.invoice.payment_term.line,currency_digits:"
 msgid "Currency Digits"
-msgstr "Decimales de la moneda"
+msgstr "Кол-во цифр валюты"
 
 msgctxt "field:account.invoice.payment_term.line,divisor:"
 msgid "Divisor"
-msgstr "Divisor"
+msgstr "Делитель"
 
 msgctxt "field:account.invoice.payment_term.line,id:"
 msgid "ID"
@@ -751,7 +776,7 @@ msgstr "ID"
 
 msgctxt "field:account.invoice.payment_term.line,payment:"
 msgid "Payment Term"
-msgstr "Plazo de pago"
+msgstr "Правило оплаты"
 
 msgctxt "field:account.invoice.payment_term.line,ratio:"
 msgid "Ratio"
@@ -759,124 +784,143 @@ msgstr ""
 
 msgctxt "field:account.invoice.payment_term.line,rec_name:"
 msgid "Name"
-msgstr "Nombre"
+msgstr "Наименование"
 
 msgctxt "field:account.invoice.payment_term.line,relativedeltas:"
 msgid "Deltas"
-msgstr "Incrementos"
+msgstr ""
 
 msgctxt "field:account.invoice.payment_term.line,sequence:"
 msgid "Sequence"
-msgstr "Secuencia"
+msgstr "Нумерация"
 
 msgctxt "field:account.invoice.payment_term.line,type:"
 msgid "Type"
-msgstr "Tipo"
+msgstr "Тип"
 
 msgctxt "field:account.invoice.payment_term.line,write_date:"
 msgid "Write Date"
-msgstr "Fecha modificación"
+msgstr "Дата изменения"
 
 msgctxt "field:account.invoice.payment_term.line,write_uid:"
 msgid "Write User"
-msgstr "Usuario modificación"
+msgstr "Изменено пользователем"
 
-msgctxt "field:account.invoice.payment_term.line.relativedelta,create_date:"
+#, fuzzy
+msgctxt "field:account.invoice.payment_term.line.delta,create_date:"
 msgid "Create Date"
-msgstr "Fecha creación"
+msgstr "Дата создания"
 
-msgctxt "field:account.invoice.payment_term.line.relativedelta,create_uid:"
+#, fuzzy
+msgctxt "field:account.invoice.payment_term.line.delta,create_uid:"
 msgid "Create User"
-msgstr "Usuario creación"
+msgstr "Создано пользователем"
 
-msgctxt "field:account.invoice.payment_term.line.relativedelta,day:"
+msgctxt "field:account.invoice.payment_term.line.delta,day:"
 msgid "Day of Month"
-msgstr "Día del mes"
+msgstr ""
 
-msgctxt "field:account.invoice.payment_term.line.relativedelta,days:"
+msgctxt "field:account.invoice.payment_term.line.delta,days:"
 msgid "Number of Days"
-msgstr "Número de días"
+msgstr ""
 
-msgctxt "field:account.invoice.payment_term.line.relativedelta,id:"
+#, fuzzy
+msgctxt "field:account.invoice.payment_term.line.delta,id:"
 msgid "ID"
 msgstr "ID"
 
-msgctxt "field:account.invoice.payment_term.line.relativedelta,line:"
+#, fuzzy
+msgctxt "field:account.invoice.payment_term.line.delta,line:"
 msgid "Payment Term Line"
-msgstr "Línea del plazo de pago"
+msgstr "Строка правила оплаты"
 
-msgctxt "field:account.invoice.payment_term.line.relativedelta,month:"
+#, fuzzy
+msgctxt "field:account.invoice.payment_term.line.delta,month:"
 msgid "Month"
-msgstr "Mes"
+msgstr "Месяц"
 
-msgctxt "field:account.invoice.payment_term.line.relativedelta,months:"
+msgctxt "field:account.invoice.payment_term.line.delta,months:"
 msgid "Number of Months"
-msgstr "Número de meses"
+msgstr ""
 
-msgctxt "field:account.invoice.payment_term.line.relativedelta,rec_name:"
+#, fuzzy
+msgctxt "field:account.invoice.payment_term.line.delta,rec_name:"
 msgid "Name"
-msgstr "Nombre"
+msgstr "Правило оплаты"
 
-msgctxt "field:account.invoice.payment_term.line.relativedelta,sequence:"
+#, fuzzy
+msgctxt "field:account.invoice.payment_term.line.delta,sequence:"
 msgid "Sequence"
-msgstr "Secuencia"
+msgstr "Последовательность"
 
-msgctxt "field:account.invoice.payment_term.line.relativedelta,weekday:"
+msgctxt "field:account.invoice.payment_term.line.delta,weekday:"
 msgid "Day of Week"
-msgstr "Día de la semana"
+msgstr ""
 
-msgctxt "field:account.invoice.payment_term.line.relativedelta,weeks:"
+msgctxt "field:account.invoice.payment_term.line.delta,weeks:"
 msgid "Number of Weeks"
-msgstr "Número de semanas"
+msgstr ""
 
-msgctxt "field:account.invoice.payment_term.line.relativedelta,write_date:"
+#, fuzzy
+msgctxt "field:account.invoice.payment_term.line.delta,write_date:"
 msgid "Write Date"
-msgstr "Fecha modificación"
+msgstr "Дата изменения"
 
-msgctxt "field:account.invoice.payment_term.line.relativedelta,write_uid:"
+#, fuzzy
+msgctxt "field:account.invoice.payment_term.line.delta,write_uid:"
 msgid "Write User"
-msgstr "Usuario modificación"
+msgstr "Изменено пользователем"
 
+#, fuzzy
 msgctxt "field:account.invoice.payment_term.test,amount:"
 msgid "Amount"
-msgstr "Importe"
+msgstr "Сумма"
 
+#, fuzzy
 msgctxt "field:account.invoice.payment_term.test,currency:"
 msgid "Currency"
-msgstr "Moneda"
+msgstr "Валюты"
 
+#, fuzzy
 msgctxt "field:account.invoice.payment_term.test,currency_digits:"
 msgid "Currency Digits"
-msgstr "Decimales de la moneda"
+msgstr "Кол-во цифр валюты"
 
+#, fuzzy
 msgctxt "field:account.invoice.payment_term.test,date:"
 msgid "Date"
-msgstr "Fecha"
+msgstr "Дата"
 
+#, fuzzy
 msgctxt "field:account.invoice.payment_term.test,id:"
 msgid "ID"
 msgstr "ID"
 
+#, fuzzy
 msgctxt "field:account.invoice.payment_term.test,payment_term:"
 msgid "Payment Term"
-msgstr "Plazo de pago"
+msgstr "Правило оплаты"
 
 msgctxt "field:account.invoice.payment_term.test,result:"
 msgid "Result"
-msgstr "Resultado"
+msgstr ""
 
+#, fuzzy
 msgctxt "field:account.invoice.payment_term.test.result,amount:"
 msgid "Amount"
-msgstr "Importe"
+msgstr "Сумма"
 
+#, fuzzy
 msgctxt "field:account.invoice.payment_term.test.result,currency_digits:"
 msgid "Currency Digits"
-msgstr "Decimales de la moneda"
+msgstr "Кол-во цифр валюты"
 
+#, fuzzy
 msgctxt "field:account.invoice.payment_term.test.result,date:"
 msgid "Date"
-msgstr "Fecha"
+msgstr "Дата"
 
+#, fuzzy
 msgctxt "field:account.invoice.payment_term.test.result,id:"
 msgid "ID"
 msgstr "ID"
@@ -887,35 +931,35 @@ msgstr "ID"
 
 msgctxt "field:account.invoice.tax,account:"
 msgid "Account"
-msgstr "Cuenta"
+msgstr "Счет"
 
 msgctxt "field:account.invoice.tax,amount:"
 msgid "Amount"
-msgstr "Importe"
+msgstr "Сумма"
 
 msgctxt "field:account.invoice.tax,base:"
 msgid "Base"
-msgstr "Base"
+msgstr "База"
 
 msgctxt "field:account.invoice.tax,base_code:"
 msgid "Base Code"
-msgstr "Código de la base"
+msgstr "Основной код"
 
 msgctxt "field:account.invoice.tax,base_sign:"
 msgid "Base Sign"
-msgstr "Signo de la base"
+msgstr "Основной знак"
 
 msgctxt "field:account.invoice.tax,create_date:"
 msgid "Create Date"
-msgstr "Fecha creación"
+msgstr "Дата создания"
 
 msgctxt "field:account.invoice.tax,create_uid:"
 msgid "Create User"
-msgstr "Usuario creación"
+msgstr "Создано пользователем"
 
 msgctxt "field:account.invoice.tax,description:"
 msgid "Description"
-msgstr "Descripción"
+msgstr "Описание"
 
 msgctxt "field:account.invoice.tax,id:"
 msgid "ID"
@@ -923,148 +967,150 @@ msgstr "ID"
 
 msgctxt "field:account.invoice.tax,invoice:"
 msgid "Invoice"
-msgstr "Factura"
+msgstr "Инвойс"
+
+#, fuzzy
+msgctxt "field:account.invoice.tax,invoice_state:"
+msgid "Invoice State"
+msgstr "Состояние инвойса"
 
 msgctxt "field:account.invoice.tax,manual:"
 msgid "Manual"
-msgstr "Manual"
+msgstr "Ручной"
 
 msgctxt "field:account.invoice.tax,rec_name:"
 msgid "Name"
-msgstr "Nombre"
+msgstr "Наименование"
 
 msgctxt "field:account.invoice.tax,sequence:"
 msgid "Sequence"
-msgstr "Secuencia"
+msgstr "Нумерация"
 
 msgctxt "field:account.invoice.tax,sequence_number:"
 msgid "Sequence Number"
-msgstr "Número de secuencia"
+msgstr "Номер нумерации"
 
 msgctxt "field:account.invoice.tax,tax:"
 msgid "Tax"
-msgstr "Impuesto"
+msgstr "Налог"
 
 msgctxt "field:account.invoice.tax,tax_code:"
 msgid "Tax Code"
-msgstr "Código de impuesto"
+msgstr "Код налога"
 
 msgctxt "field:account.invoice.tax,tax_sign:"
 msgid "Tax Sign"
-msgstr "Signo del impuesto"
+msgstr "Знак налога"
 
 msgctxt "field:account.invoice.tax,write_date:"
 msgid "Write Date"
-msgstr "Fecha modificación"
+msgstr "Дата изменения"
 
 msgctxt "field:account.invoice.tax,write_uid:"
 msgid "Write User"
-msgstr "Usuario modificación"
+msgstr "Изменено пользователем"
 
 msgctxt "field:account.period,in_credit_note_sequence:"
 msgid "Supplier Credit Note Sequence"
-msgstr "Secuencia de nota de crédito de proveedor"
+msgstr "Нумерация сторно поставщиков"
 
 msgctxt "field:account.period,in_invoice_sequence:"
 msgid "Supplier Invoice Sequence"
-msgstr "Secuencia de factura de proveedor"
+msgstr "Нумерация инвойсов поставщика"
 
 msgctxt "field:account.period,out_credit_note_sequence:"
 msgid "Customer Credit Note Sequence"
-msgstr "Secuencia de nota de crédito de cliente"
+msgstr "Нумерация сторно заказчиков"
 
 msgctxt "field:account.period,out_invoice_sequence:"
 msgid "Customer Invoice Sequence"
-msgstr "Secuencia de factura de cliente"
+msgstr "Нумерация инвойса заказчика"
 
 msgctxt "field:party.address,invoice:"
 msgid "Invoice"
-msgstr "Factura"
+msgstr "Инвойс"
 
 msgctxt "field:party.party,customer_payment_term:"
 msgid "Customer Payment Term"
-msgstr "Plazo de pago de cliente"
+msgstr "Правило оплаты заказчика"
 
 msgctxt "field:party.party,supplier_payment_term:"
 msgid "Supplier Payment Term"
-msgstr "Plazo de pago de proveedor"
+msgstr "Правило оплаты поставщика"
 
 msgctxt "help:account.invoice.credit.start,with_refund:"
 msgid "If true, the current invoice(s) will be paid."
-msgstr "Si está marcada, se pagarán las facturas actuales."
-
-msgctxt "help:account.invoice.payment_term.line,sequence:"
-msgid "Use to order lines in ascending order"
-msgstr "Sirve para ordenar las líneas de forma ascendente."
+msgstr "Если истинно, то текущий инвойс будет оплачен."
 
 msgctxt "model:account.invoice,name:"
 msgid "Invoice"
-msgstr "Factura"
+msgstr "Инвойс"
 
 msgctxt "model:account.invoice-account.move.line,name:"
 msgid "Invoice - Payment Line"
-msgstr "Factura - Línea de pago"
+msgstr "Инвойс - строка оплаты"
 
+#, fuzzy
 msgctxt "model:account.invoice.credit.start,name:"
 msgid "Credit Invoice"
-msgstr "Nueva nota de crédito"
+msgstr "Инициализировать возврат инвойса"
 
 msgctxt "model:account.invoice.line,name:"
 msgid "Invoice Line"
-msgstr "Línea de factura"
+msgstr "Строка инвойса"
 
 msgctxt "model:account.invoice.line-account.tax,name:"
 msgid "Invoice Line - Tax"
-msgstr "Línea de factura - Impuesto"
+msgstr "Строка инвойса - Налоги"
 
 msgctxt "model:account.invoice.pay.ask,name:"
 msgid "Pay Invoice"
-msgstr "Pagar factura"
+msgstr "Оплата инвойса"
 
 msgctxt "model:account.invoice.pay.start,name:"
 msgid "Pay Invoice"
-msgstr "Pagar factura"
+msgstr "Оплата инвойса"
 
 msgctxt "model:account.invoice.payment_term,name:"
 msgid "Payment Term"
-msgstr "Plazo de pago"
+msgstr "Правило оплаты"
 
 msgctxt "model:account.invoice.payment_term.line,name:"
 msgid "Payment Term Line"
-msgstr "Línea del plazo de pago"
+msgstr "Строка правила оплаты"
 
-msgctxt "model:account.invoice.payment_term.line.relativedelta,name:"
+msgctxt "model:account.invoice.payment_term.line.delta,name:"
 msgid "Payment Term Line Relative Delta"
-msgstr "Incremento relativo línea de plazo de pago"
+msgstr ""
 
 msgctxt "model:account.invoice.payment_term.test,name:"
 msgid "Test Payment Term"
-msgstr "Probar plazo de pago"
+msgstr ""
 
 msgctxt "model:account.invoice.payment_term.test.result,name:"
 msgid "Test Payment Term"
-msgstr "Probar plazo de pago"
+msgstr ""
 
 msgctxt "model:account.invoice.print.warning,name:"
 msgid "Print Invoice Report Warning"
-msgstr "Aviso al imprimir la factura"
+msgstr "Предупреждение при распечатке отчета Инвойса"
 
 msgctxt "model:account.invoice.tax,name:"
 msgid "Invoice Tax"
-msgstr "Impuesto de factura"
+msgstr "Налог по инвойсу"
 
 msgctxt "model:ir.action,name:act_invoice_form"
 msgid "Invoices"
-msgstr "Todas las facturas"
+msgstr "Все инвойсы"
 
 msgctxt "model:ir.action,name:act_invoice_form2"
 msgid "Invoices"
-msgstr "Facturas"
+msgstr "Инвойсы"
 
 #, fuzzy
 msgctxt "model:ir.action,name:act_invoice_in_form"
 msgid "Supplier Invoices"
-msgstr "Facturas de proveedor"
+msgstr "Инвойсы поставщиков"
 
 msgctxt "model:ir.action,name:act_invoice_out_form"
 msgid "Customer Invoices"
@@ -1072,78 +1118,78 @@ msgstr ""
 
 msgctxt "model:ir.action,name:act_payment_term_form"
 msgid "Payment Terms"
-msgstr "Plazos de pago"
+msgstr "Правила оплаты"
 
 msgctxt "model:ir.action,name:credit"
 msgid "Credit"
-msgstr "Abonar"
+msgstr "Кредит"
 
 msgctxt "model:ir.action,name:print"
 msgid "Invoice"
-msgstr "Factura"
+msgstr "Инвойс"
 
 msgctxt "model:ir.action,name:report_invoice"
 msgid "Invoice"
-msgstr "Factura"
+msgstr "Инвойс"
 
 msgctxt "model:ir.action,name:wizard_pay"
 msgid "Pay Invoice"
-msgstr "Pagar factura"
+msgstr "Оплата инвойса"
 
 msgctxt "model:ir.action,name:wizard_payment_term_test"
 msgid "Test Payment Term"
-msgstr "Probar plazo de pago"
+msgstr ""
 
 #, fuzzy
 msgctxt "model:ir.action.act_window.domain,name:act_invoice_in_domain_all"
 msgid "All"
-msgstr "Todo"
+msgstr "Все"
 
 #, fuzzy
 msgctxt "model:ir.action.act_window.domain,name:act_invoice_in_domain_draft"
 msgid "Draft"
-msgstr "Borrador"
+msgstr "Черновик"
 
 #, fuzzy
 msgctxt "model:ir.action.act_window.domain,name:act_invoice_in_domain_posted"
 msgid "Posted"
-msgstr "Contabilizada"
+msgstr "Отправлен"
 
 #, fuzzy
 msgctxt ""
 "model:ir.action.act_window.domain,name:act_invoice_in_domain_validated"
 msgid "Validated"
-msgstr "Validada"
+msgstr "Утвержденный"
 
 #, fuzzy
 msgctxt "model:ir.action.act_window.domain,name:act_invoice_out_domain_all"
 msgid "All"
-msgstr "Todo"
+msgstr "Все"
 
 #, fuzzy
 msgctxt "model:ir.action.act_window.domain,name:act_invoice_out_domain_draft"
 msgid "Draft"
-msgstr "Borrador"
+msgstr "Черновик"
 
 #, fuzzy
 msgctxt "model:ir.action.act_window.domain,name:act_invoice_out_domain_posted"
 msgid "Posted"
-msgstr "Contabilizada"
+msgstr "Отправлен"
 
 #, fuzzy
 msgctxt ""
 "model:ir.action.act_window.domain,name:act_invoice_out_domain_validated"
 msgid "Validated"
-msgstr "Validada"
+msgstr "Утвержденный"
 
 msgctxt "model:ir.sequence.type,name:sequence_type_account_invoice"
 msgid "Invoice"
-msgstr "Factura"
+msgstr "Инвойс"
 
 #, fuzzy
 msgctxt "model:ir.ui.menu,name:menu_invoice_in_form"
 msgid "Supplier Invoices"
-msgstr "Facturas de proveedor"
+msgstr "Инвойсы поставщиков"
 
 msgctxt "model:ir.ui.menu,name:menu_invoice_out_form"
 msgid "Customer Invoices"
@@ -1151,364 +1197,343 @@ msgstr ""
 
 msgctxt "model:ir.ui.menu,name:menu_invoices"
 msgid "Invoices"
-msgstr "Facturas"
+msgstr "Инвойсы"
 
 msgctxt "model:ir.ui.menu,name:menu_payment_term_form"
 msgid "Payment Terms"
-msgstr "Plazos de pago"
+msgstr "Правила оплаты"
 
 msgctxt "model:ir.ui.menu,name:menu_payment_term_test"
 msgid "Test Payment Term"
-msgstr "Probar plazo de pago"
+msgstr ""
 
 msgctxt "model:ir.ui.menu,name:menu_payment_terms_configuration"
 msgid "Payment Terms"
-msgstr "Plazos de pago"
+msgstr "Правила оплаты"
 
 #, fuzzy
 msgctxt "report:account.invoice:"
 msgid ":"
 msgstr ":"
 
-#, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Amount"
-msgstr "Importe"
+msgstr "Сумма"
 
-#, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Base"
-msgstr "Base"
+msgstr "База"
 
-#, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Date"
-msgstr "Fecha"
+msgstr "Дата"
 
-#, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Date:"
-msgstr "Fecha"
+msgstr "Дата:"
 
-#, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Description"
-msgstr "Descripción"
+msgstr "Описание"
 
-#, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Description:"
-msgstr "Descripción"
+msgstr "Описание:"
 
 msgctxt "report:account.invoice:"
 msgid "Draft Invoice"
-msgstr ""
+msgstr "Черновой инвойс"
 
 msgctxt "report:account.invoice:"
 msgid "Invoice N°:"
-msgstr ""
+msgstr "Инвойс №:"
 
-#, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Payment Term"
-msgstr "Plazo de pago"
+msgstr "Правило оплаты"
 
 msgctxt "report:account.invoice:"
 msgid "Pro forma Invoice"
-msgstr ""
+msgstr "Предварительный инвойс"
 
-#, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Quantity"
-msgstr "Cantidad"
+msgstr "Кол-во"
 
 #, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Reference"
-msgstr "Referencia"
+msgstr "Ссылка"
 
-#, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Supplier Invoice N°:"
-msgstr "Factura de proveedor"
+msgstr "Инвойс поставщика №:"
 
-#, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Tax"
-msgstr "Impuesto"
+msgstr "Налог"
 
-#, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Taxes"
-msgstr "Impuestos"
+msgstr "Налоги"
 
-#, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Taxes:"
-msgstr "Impuestos"
+msgstr "Налоги:"
 
 msgctxt "report:account.invoice:"
 msgid "Total (excl. taxes):"
-msgstr ""
+msgstr "Итого (без налогов):"
 
-#, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Total:"
-msgstr "Total"
+msgstr "Итого:"
 
-#, fuzzy
 msgctxt "report:account.invoice:"
 msgid "Unit Price"
-msgstr "Precio unidad"
-
-msgctxt "report:account.invoice:"
-msgid "VAT:"
-msgstr ""
+msgstr "Цена за единицу"
 
 msgctxt "selection:account.invoice,state:"
 msgid "Canceled"
-msgstr "Cancelada"
+msgstr "Отменено"
 
 msgctxt "selection:account.invoice,state:"
 msgid "Draft"
-msgstr "Borrador"
+msgstr "Черновик"
 
 msgctxt "selection:account.invoice,state:"
 msgid "Paid"
-msgstr "Pagada"
+msgstr "Оплачен"
 
 msgctxt "selection:account.invoice,state:"
 msgid "Posted"
-msgstr "Contabilizada"
+msgstr "Отправлен"
 
 msgctxt "selection:account.invoice,state:"
 msgid "Validated"
-msgstr "Validada"
+msgstr "Утвержденный"
 
+#, fuzzy
 msgctxt "selection:account.invoice,type:"
 msgid "Customer"
-msgstr ""
+msgstr "Заказчик"
 
+#, fuzzy
 msgctxt "selection:account.invoice,type:"
 msgid "Supplier"
-msgstr ""
+msgstr "Поставщик"
+
+#, fuzzy
+msgctxt "selection:account.invoice.line,invoice_state:"
+msgid "Canceled"
+msgstr "Отменено"
+
+#, fuzzy
+msgctxt "selection:account.invoice.line,invoice_state:"
+msgid "Draft"
+msgstr "Черновик"
+
+#, fuzzy
+msgctxt "selection:account.invoice.line,invoice_state:"
+msgid "Paid"
+msgstr "Оплачен"
+
+#, fuzzy
+msgctxt "selection:account.invoice.line,invoice_state:"
+msgid "Posted"
+msgstr "Проведен"
+
+#, fuzzy
+msgctxt "selection:account.invoice.line,invoice_state:"
+msgid "Validated"
+msgstr "Утвержденный"
 
 msgctxt "selection:account.invoice.line,invoice_type:"
 msgid ""
 msgstr ""
 
+#, fuzzy
 msgctxt "selection:account.invoice.line,invoice_type:"
 msgid "Customer"
-msgstr ""
+msgstr "Заказчик"
 
+#, fuzzy
 msgctxt "selection:account.invoice.line,invoice_type:"
 msgid "Supplier"
-msgstr ""
+msgstr "Поставщик"
 
 msgctxt "selection:account.invoice.line,type:"
 msgid "Comment"
-msgstr "Comentario"
+msgstr "Комментарии"
 
 msgctxt "selection:account.invoice.line,type:"
 msgid "Line"
-msgstr "Línea"
+msgstr "Строка"
 
 msgctxt "selection:account.invoice.line,type:"
 msgid "Subtotal"
-msgstr "Subtotal"
+msgstr "Подитог"
 
 msgctxt "selection:account.invoice.line,type:"
 msgid "Title"
-msgstr "Título"
+msgstr "Заголовок"
 
 msgctxt "selection:account.invoice.pay.ask,type:"
 msgid "Partial Payment"
-msgstr "Pago parcial"
+msgstr "Частичная оплата"
 
 msgctxt "selection:account.invoice.pay.ask,type:"
 msgid "Write-Off"
-msgstr "Desajuste"
+msgstr "Списание"
 
 msgctxt "selection:account.invoice.payment_term.line,type:"
 msgid "Fixed"
-msgstr "Fijo"
+msgstr "Фиксированная"
 
 msgctxt "selection:account.invoice.payment_term.line,type:"
 msgid "Percentage on Remainder"
-msgstr "Porcentaje sobre el remanente"
+msgstr "Процент от остатка"
 
 msgctxt "selection:account.invoice.payment_term.line,type:"
 msgid "Percentage on Total"
-msgstr "Porcentaje sobre total"
+msgstr "Процент от общей суммы"
 
 msgctxt "selection:account.invoice.payment_term.line,type:"
 msgid "Remainder"
-msgstr "Remanente"
+msgstr "Остаток"
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,month:"
+msgctxt "selection:account.invoice.payment_term.line.delta,month:"
 msgid ""
 msgstr ""
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,month:"
+msgctxt "selection:account.invoice.payment_term.line.delta,month:"
 msgid "April"
-msgstr "Abril"
+msgstr ""
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,month:"
+msgctxt "selection:account.invoice.payment_term.line.delta,month:"
 msgid "August"
-msgstr "Agosto"
+msgstr ""
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,month:"
+msgctxt "selection:account.invoice.payment_term.line.delta,month:"
 msgid "December"
-msgstr "Diciembre"
+msgstr ""
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,month:"
+msgctxt "selection:account.invoice.payment_term.line.delta,month:"
 msgid "February"
-msgstr "Febrero"
+msgstr ""
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,month:"
+msgctxt "selection:account.invoice.payment_term.line.delta,month:"
 msgid "January"
-msgstr "Enero"
+msgstr ""
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,month:"
+msgctxt "selection:account.invoice.payment_term.line.delta,month:"
 msgid "July"
-msgstr "Julio"
+msgstr ""
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,month:"
+msgctxt "selection:account.invoice.payment_term.line.delta,month:"
 msgid "June"
-msgstr "Junio"
+msgstr ""
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,month:"
+msgctxt "selection:account.invoice.payment_term.line.delta,month:"
 msgid "March"
-msgstr "Marzo"
+msgstr ""
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,month:"
+msgctxt "selection:account.invoice.payment_term.line.delta,month:"
 msgid "May"
-msgstr "Mayo"
+msgstr ""
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,month:"
+msgctxt "selection:account.invoice.payment_term.line.delta,month:"
 msgid "November"
-msgstr "Noviembre"
+msgstr ""
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,month:"
+msgctxt "selection:account.invoice.payment_term.line.delta,month:"
 msgid "October"
-msgstr "Octubre"
+msgstr ""
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,month:"
+msgctxt "selection:account.invoice.payment_term.line.delta,month:"
 msgid "September"
-msgstr "Septiembre"
+msgstr ""
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,weekday:"
+msgctxt "selection:account.invoice.payment_term.line.delta,weekday:"
 msgid ""
 msgstr ""
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,weekday:"
+#, fuzzy
+msgctxt "selection:account.invoice.payment_term.line.delta,weekday:"
 msgid "Friday"
-msgstr "Viernes"
+msgstr "Пятница"
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,weekday:"
+#, fuzzy
+msgctxt "selection:account.invoice.payment_term.line.delta,weekday:"
 msgid "Monday"
-msgstr "Lunes"
+msgstr "Понедельник"
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,weekday:"
+#, fuzzy
+msgctxt "selection:account.invoice.payment_term.line.delta,weekday:"
 msgid "Saturday"
-msgstr "Sábado"
+msgstr "Суббота"
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,weekday:"
+#, fuzzy
+msgctxt "selection:account.invoice.payment_term.line.delta,weekday:"
 msgid "Sunday"
-msgstr "Domingo"
+msgstr "Воскресенье"
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,weekday:"
+#, fuzzy
+msgctxt "selection:account.invoice.payment_term.line.delta,weekday:"
 msgid "Thursday"
-msgstr "Jueves"
+msgstr "Четверг"
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,weekday:"
+#, fuzzy
+msgctxt "selection:account.invoice.payment_term.line.delta,weekday:"
 msgid "Tuesday"
-msgstr "Martes"
+msgstr "Вторник"
 
-msgctxt "selection:account.invoice.payment_term.line.relativedelta,weekday:"
+#, fuzzy
+msgctxt "selection:account.invoice.payment_term.line.delta,weekday:"
 msgid "Wednesday"
-msgstr "Miércoles"
+msgstr "Среда"
+
+#, fuzzy
+msgctxt "selection:account.invoice.tax,invoice_state:"
+msgid "Canceled"
+msgstr "Отменено"
+
+#, fuzzy
+msgctxt "selection:account.invoice.tax,invoice_state:"
+msgid "Draft"
+msgstr "Черновик"
+
+#, fuzzy
+msgctxt "selection:account.invoice.tax,invoice_state:"
+msgid "Paid"
+msgstr "Оплачен"
+
+#, fuzzy
+msgctxt "selection:account.invoice.tax,invoice_state:"
+msgid "Posted"
+msgstr "Проведен"
+
+#, fuzzy
+msgctxt "selection:account.invoice.tax,invoice_state:"
+msgid "Validated"
+msgstr "Утвержденный"
 
 msgctxt "view:account.invoice.credit.start:"
 msgid "Are you sure to credit those/this invoice(s)?"
-msgstr ""
-
-#, fuzzy
-msgctxt "view:account.invoice.credit.start:"
-msgid "Credit Invoice"
-msgstr "Nueva nota de crédito"
+msgstr "Вы уверены, что хотите выставить Сторно для этих инвойсов?"
 
 msgctxt "view:account.invoice.line:"
 msgid "General"
-msgstr ""
+msgstr "Основной"
 
-#, fuzzy
-msgctxt "view:account.invoice.line:"
-msgid "Invoice Line"
-msgstr "Línea de factura"
-
-#, fuzzy
-msgctxt "view:account.invoice.line:"
-msgid "Invoice Lines"
-msgstr "Línea de factura"
-
-#, fuzzy
 msgctxt "view:account.invoice.line:"
 msgid "Notes"
-msgstr "Nota"
-
-#, fuzzy
-msgctxt "view:account.invoice.pay.ask:"
-msgid "Pay Invoice"
-msgstr "Pagar factura"
-
-#, fuzzy
-msgctxt "view:account.invoice.pay.start:"
-msgid "Pay Invoice"
-msgstr "Pagar factura"
-
-#, fuzzy
-msgctxt "view:account.invoice.payment_term.line.relativedelta:"
-msgid "Payment Term Line Relative Delta"
-msgstr "Incremento relativo línea de plazo de pago"
-
-#, fuzzy
-msgctxt "view:account.invoice.payment_term.line.relativedelta:"
-msgid "Payment Term Line Relative Deltas"
-msgstr "Incremento relativo línea de plazo de pago"
+msgstr "Комментарии"
 
 #, fuzzy
 msgctxt "view:account.invoice.payment_term.line:"
 msgid "%"
 msgstr "%"
-
-#, fuzzy
-msgctxt "view:account.invoice.payment_term.line:"
-msgid "Payment Term Line"
-msgstr "Línea del plazo de pago"
-
-msgctxt "view:account.invoice.payment_term.test.result:"
-msgid "Payment Term Test Results"
-msgstr ""
-
-#, fuzzy
-msgctxt "view:account.invoice.payment_term.test:"
-msgid "Payment Term Test"
-msgstr "Plazos de pago"
-
-#, fuzzy
-msgctxt "view:account.invoice.payment_term:"
-msgid "Payment Term"
-msgstr "Plazo de pago"
-
-#, fuzzy
-msgctxt "view:account.invoice.payment_term:"
-msgid "Payment Terms"
-msgstr "Plazos de pago"
-
-msgctxt "view:account.invoice.print.warning:"
-msgid "Print Invoice"
-msgstr ""
 
 msgctxt "view:account.invoice.print.warning:"
 msgid "The invoices will be sent directly to the printer."
@@ -1516,137 +1541,103 @@ msgstr ""
 
 msgctxt "view:account.invoice.print.warning:"
 msgid "You have selected more than one invoice to print."
-msgstr ""
+msgstr "Выбрано более одного инвойса для печати."
 
-#, fuzzy
-msgctxt "view:account.invoice.tax:"
-msgid "Invoice Tax"
-msgstr "Impuesto de factura"
-
-#, fuzzy
-msgctxt "view:account.invoice.tax:"
-msgid "Invoice Taxes"
-msgstr "Impuestos de factura"
-
-#, fuzzy
 msgctxt "view:account.invoice.tax:"
 msgid "Tax Code"
-msgstr "Código de impuesto"
-
-#, fuzzy
-msgctxt "view:account.invoice.tax:"
-msgid "Taxes"
-msgstr "Impuestos"
+msgstr "Код налога"
 
 msgctxt "view:account.invoice:"
 msgid "Also known as Pro Forma"
-msgstr ""
+msgstr "Так же известен как предварительный"
 
 msgctxt "view:account.invoice:"
 msgid "Are you sure to cancel the invoice?"
-msgstr ""
+msgstr "Вы уверены что хотите отменить инвойс?"
 
-#, fuzzy
 msgctxt "view:account.invoice:"
 msgid "Cancel"
-msgstr "Cancelar"
+msgstr "Отменить"
 
-#, fuzzy
 msgctxt "view:account.invoice:"
 msgid "Draft"
-msgstr "Borrador"
+msgstr "Черновик"
 
-#, fuzzy
 msgctxt "view:account.invoice:"
 msgid "Invoice"
-msgstr "Factura"
-
-#, fuzzy
-msgctxt "view:account.invoice:"
-msgid "Invoices"
-msgstr "Todas las facturas"
+msgstr "Инвойс"
 
 msgctxt "view:account.invoice:"
 msgid "Other Info"
-msgstr ""
+msgstr "Другая информация"
 
+#, fuzzy
 msgctxt "view:account.invoice:"
 msgid "Pay"
-msgstr ""
+msgstr "Оплата"
 
 msgctxt "view:account.invoice:"
 msgid "Payment"
-msgstr ""
-
-msgctxt "view:account.invoice:"
-msgid "Post"
-msgstr ""
+msgstr "Оплата"
 
 #, fuzzy
 msgctxt "view:account.invoice:"
+msgid "Post"
+msgstr "Отправить"
+
+msgctxt "view:account.invoice:"
 msgid "Validate"
-msgstr "Validada"
+msgstr "Утвердить"
 
 msgctxt "view:account.move.line:"
 msgid "Amount Second Currency"
-msgstr ""
+msgstr "Сумма во второй валюте"
 
-#, fuzzy
 msgctxt "view:account.move.line:"
 msgid "Credit"
-msgstr "Abonar"
+msgstr "Кредит"
 
 msgctxt "view:account.move.line:"
 msgid "Debit"
-msgstr ""
+msgstr "Дебет"
 
-#, fuzzy
-msgctxt "view:account.move.line:"
-msgid "Lines to Pay"
-msgstr "Líneas a pagar"
-
-#, fuzzy
-msgctxt "view:account.move.line:"
-msgid "Payment Lines"
-msgstr "Líneas de pago"
-
-#, fuzzy
 msgctxt "view:party.party:"
 msgid "Payment Terms"
-msgstr "Plazos de pago"
+msgstr "Правила оплаты"
 
 msgctxt "wizard_button:account.invoice.credit,start,credit:"
 msgid "Credit"
-msgstr "Abonar"
+msgstr "Кредит"
 
 msgctxt "wizard_button:account.invoice.credit,start,end:"
 msgid "Cancel"
-msgstr "Cancelar"
+msgstr "Отменить"
 
 msgctxt "wizard_button:account.invoice.pay,ask,end:"
 msgid "Cancel"
-msgstr "Cancelar"
+msgstr "Отменить"
 
 msgctxt "wizard_button:account.invoice.pay,ask,pay:"
 msgid "OK"
-msgstr "Aceptar"
+msgstr "Ок"
 
 msgctxt "wizard_button:account.invoice.pay,start,choice:"
 msgid "OK"
-msgstr "Aceptar"
+msgstr "Ок"
 
 msgctxt "wizard_button:account.invoice.pay,start,end:"
 msgid "Cancel"
-msgstr "Cancelar"
+msgstr "Отменить"
 
+#, fuzzy
 msgctxt "wizard_button:account.invoice.payment_term.test,test,end:"
 msgid "Close"
-msgstr "Cerrar"
+msgstr "Закрыть"
 
 msgctxt "wizard_button:account.invoice.print,warning,end:"
 msgid "Cancel"
-msgstr "Cancelar"
+msgstr "Отменить"
 
 msgctxt "wizard_button:account.invoice.print,warning,print_:"
 msgid "Print"
-msgstr "Imprimir"
+msgstr "Печать"
