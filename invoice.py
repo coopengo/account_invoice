@@ -17,6 +17,7 @@ from trytond.report import Report
 from trytond.wizard import Wizard, StateView, StateTransition, StateAction, \
     StateReport, Button
 from trytond import backend
+from trytond.server_context import ServerContext
 from trytond.pyson import If, Eval, Bool
 from trytond.tools import reduce_ids, grouped_slice
 from trytond.transaction import Transaction
@@ -1008,10 +1009,15 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                 date=accounting_date, test_state=test_state)
             period = Period(period_id)
             invoice_type = invoice.type
-            if all(l.amount <= 0 for l in invoice.lines):
-                invoice_type += '_credit_note'
+            # JCA : Avoid forced read of invoice lines unless necessary
+            forced_type = ServerContext().get('forced_invoice_type', None)
+            if forced_type:
+                invoice_type += forced_type
             else:
-                invoice_type += '_invoice'
+                if all(l.amount <= 0 for l in invoice.lines):
+                    invoice_type += '_credit_note'
+                else:
+                    invoice_type += '_invoice'
             sequence = period.get_invoice_sequence(invoice_type)
             if not sequence:
                 cls.raise_user_error('no_invoice_sequence', {
