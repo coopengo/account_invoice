@@ -1023,16 +1023,12 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         pattern.setdefault('fiscalyear', fiscalyear.id)
         pattern.setdefault('period', period.id)
         invoice_type = self.type
-        # JCA : Avoid forced read of invoice lines unless necessary
-        forced_type = ServerContext().get('forced_invoice_type', None)
-        if forced_type:
-            invoice_type += forced_type
+        if (all(l.amount < 0 for l in self.lines if l.product)
+                and self.total_amount < 0):
+            invoice_type += '_credit_note'
         else:
-            if (all(l.amount < 0 for l in self.lines if l.product)
-                    and self.total_amount < 0):
-                invoice_type += '_credit_note'
-            else:
-                invoice_type += '_invoice'
+            invoice_type += '_invoice'
+
         for invoice_sequence in fiscalyear.invoice_sequences:
             if invoice_sequence.match(pattern):
                 sequence = getattr(
