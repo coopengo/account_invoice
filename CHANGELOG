@@ -1,11 +1,10 @@
-Version 4.4.3 - 2018-01-04
+Version 4.6.1 - 2018-01-04
 * Bug fixes (see mercurial logs for details)
 
-Version 4.4.2 - 2017-07-01
+Version 4.6.0 - 2017-10-30
 * Bug fixes (see mercurial logs for details)
-
-Version 4.4.1 - 2017-06-06
-* Bug fixes (see mercurial logs for details)
+* Use tax sequence as default value for invoice taxes sequence
+* Add party tax identifier on invoice
 
 Version 4.4.0 - 2017-05-01
 * Bug fixes (see mercurial logs for details)

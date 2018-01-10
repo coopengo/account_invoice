@@ -15,7 +15,7 @@ from trytond.model import Workflow, ModelView, ModelSQL, fields, Check, \
     sequence_ordered
 from trytond.report import Report
 from trytond.wizard import Wizard, StateView, StateTransition, StateAction, \
-    StateReport, Button
+    Button
 from trytond import backend
 from trytond.server_context import ServerContext
 from trytond.pyson import If, Eval, Bool
@@ -30,7 +30,7 @@ from trytond.modules.product import price_digits
 
 __all__ = ['Invoice', 'InvoicePaymentLine', 'InvoiceLine',
     'InvoiceLineTax', 'InvoiceTax',
-    'PrintInvoiceWarning', 'PrintInvoice', 'InvoiceReport',
+    'InvoiceReport',
     'PayInvoiceStart', 'PayInvoiceAsk', 'PayInvoice',
     'CreditInvoiceStart', 'CreditInvoice']
 
@@ -112,6 +112,13 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         depends=_DEPENDS)
     party = fields.Many2One('party.party', 'Party',
         required=True, states=_STATES, depends=_DEPENDS)
+    party_tax_identifier = fields.Many2One(
+        'party.identifier', "Party Tax Identifier",
+        states=_STATES,
+        domain=[
+            ('party', '=', Eval('party', -1)),
+            ],
+        depends=_DEPENDS + ['party'])
     party_lang = fields.Function(fields.Char('Party Language'),
         'on_change_with_party_lang')
     invoice_address = fields.Many2One('party.address', 'Invoice Address',
@@ -155,7 +162,10 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         domain=[
             ('company', '=', Eval('company', -1)),
             ],
-        states=_STATES, depends=['state', 'currency_date', 'company'])
+        states={
+            'readonly': (Eval('state') != 'draft') | ~Eval('company'),
+            },
+        depends=['state', 'company'])
     taxes = fields.One2Many('account.invoice.tax', 'invoice', 'Tax Lines',
         states=_STATES, depends=_DEPENDS)
     comment = fields.Text('Comment', states=_STATES, depends=_DEPENDS)
@@ -433,11 +443,11 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         self.account = None
         if self.party:
             if self.type == 'out':
-                self.account = self.party.account_receivable
+                self.account = self.party.account_receivable_used
                 if self.party.customer_payment_term:
                     self.payment_term = self.party.customer_payment_term
             elif self.type == 'in':
-                self.account = self.party.account_payable
+                self.account = self.party.account_payable_used
                 if self.party.supplier_payment_term:
                     self.payment_term = self.party.supplier_payment_term
 
@@ -459,6 +469,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
 
         if self.party:
             self.invoice_address = self.party.address_get(type='invoice')
+            self.party_tax_identifier = self.party.tax_identifier
 
     @fields.depends('currency')
     def on_change_with_currency_digits(self, name=None):
@@ -546,7 +557,10 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                 self.tax_amount += computed_taxes[key]['amount']
                 value = InvoiceTax.default_get(InvoiceTax._fields.keys())
                 value.update(computed_taxes[key])
-                taxes.append(InvoiceTax(**value))
+                invoice_tax = InvoiceTax(**value)
+                if invoice_tax.tax:
+                    invoice_tax.sequence = invoice_tax.tax.sequence
+                taxes.append(invoice_tax)
         self.taxes = taxes
         if self.currency:
             self.untaxed_amount = self.currency.round(self.untaxed_amount)
@@ -994,6 +1008,9 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                 continue
             if not invoice.tax_identifier:
                 invoice.tax_identifier = invoice.get_tax_identifier()
+            # Generated invoice may not fill the party tax identifier
+            if not invoice.party_tax_identifier:
+                invoice.party_tax_identifier = invoice.party.tax_identifier
 
             if invoice.number:
                 continue
@@ -2118,6 +2135,8 @@ class InvoiceTax(sequence_ordered(), ModelSQL, ModelView):
             'readonly': ~Eval('manual', False) | _states['readonly'],
             },
         depends=['manual'] + _depends)
+    legal_notice = fields.Text("Legal Notice", states=_states,
+        depends=_depends)
 
     del _states, _depends
 
@@ -2322,39 +2341,6 @@ class InvoiceTax(sequence_ordered(), ModelSQL, ModelView):
         return line
 
 
-class PrintInvoiceWarning(ModelView):
-    'Print Invoice Report Warning'
-    __name__ = 'account.invoice.print.warning'
-
-
-class PrintInvoice(Wizard):
-    'Print Invoice Report'
-    __name__ = 'account.invoice.print'
-    start = StateTransition()
-    warning = StateView('account.invoice.print.warning',
-        'account_invoice.print_warning_view_form', [
-            Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Print', 'print_', 'tryton-print', default=True),
-            ])
-    print_ = StateReport('account.invoice')
-
-    def transition_start(self):
-        if len(Transaction().context['active_ids']) > 1:
-            return 'warning'
-        return 'print_'
-
-    def do_print_(self, action):
-        data = {}
-        data['id'] = Transaction().context['active_ids'].pop()
-        data['ids'] = [data['id']]
-        return action, data
-
-    def transition_print_(self):
-        if Transaction().context['active_ids']:
-            return 'print_'
-        return 'end'
-
-
 class InvoiceReport(Report):
     __name__ = 'account.invoice'
 
@@ -2364,42 +2350,47 @@ class InvoiceReport(Report):
         cls.__rpc__['execute'] = RPC(False)
 
     @classmethod
-    def execute(cls, ids, data):
-        Invoice = Pool().get('account.invoice')
-
-        with Transaction().set_context(address_with_party=True):
-            result = super(InvoiceReport, cls).execute(ids, data)
-        invoice = Invoice(ids[0])
-
-        if len(ids) > 1:
-            result = result[:2] + (True,) + result[3:]
-        else:
-            if invoice.number:
-                result = result[:3] + (result[3] + ' - ' + invoice.number,)
-
+    def _execute(cls, records, data, action):
+        pool = Pool()
+        Invoice = pool.get('account.invoice')
+        # Re-instantiate because records are TranslateModel
+        invoice, = Invoice.browse(records)
         if invoice.invoice_report_cache:
-            result = (invoice.invoice_report_format,
-                invoice.invoice_report_cache) + result[2:]
+            return (
+                invoice.invoice_report_format,
+                bytes(invoice.invoice_report_cache))
         else:
+            result = super(InvoiceReport, cls)._execute(records, data, action)
             # If the invoice is posted or paid and the report not saved in
             # invoice_report_cache there was an error somewhere. So we save it
             # now in invoice_report_cache
             if invoice.state in {'posted', 'paid'} and invoice.type == 'out':
-                invoice.invoice_report_format, invoice.invoice_report_cache = \
-                    result[:2]
+                format_, data = result
+                invoice.invoice_report_format = format_
+                invoice.invoice_report_cache = \
+                    Invoice.invoice_report_cache.cast(data)
                 invoice.save()
-        return result
+            return result
 
     @classmethod
-    def _get_records(cls, ids, model, data):
-        with Transaction().set_context(language=False):
-            return super(InvoiceReport, cls)._get_records(ids[:1], model, data)
+    def execute(cls, ids, data):
+        pool = Pool()
+        Invoice = pool.get('account.invoice')
+        with Transaction().set_context(
+                language=False,
+                address_with_party=True):
+            result = super(InvoiceReport, cls).execute(ids, data)
+            if len(ids) == 1:
+                invoice, = Invoice.browse(ids)
+                if invoice.number:
+                    result = result[:3] + (result[3] + ' - ' + invoice.number,)
+            return result
 
     @classmethod
     def get_context(cls, records, data):
-        report_context = super(InvoiceReport, cls).get_context(records, data)
-        report_context['company'] = report_context['user'].company
-        return report_context
+        context = super(InvoiceReport, cls).get_context(records, data)
+        context['invoice'] = context['record']
+        return context
 
 
 class PayInvoiceStart(ModelView):
