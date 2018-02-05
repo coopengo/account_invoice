@@ -619,6 +619,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
 
     @classmethod
     def get_reconciled(cls, invoices, name):
+        # NKH: handle reconciled getter as class method to improve perf
         pool = Pool()
         MoveLine = pool.get('account.move.line')
         line = MoveLine.__table__()
@@ -1256,6 +1257,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
             if refund:
                 cls.post([new_invoice])
                 if new_invoice.state == 'posted':
+                    # NKH: handle bulk reconcile to improve perf
                     to_reconcile.append([l for l in invoice.lines_to_pay
                             if not l.reconciliation] +
                         [l for l in new_invoice.lines_to_pay
@@ -1317,6 +1319,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         for invoice in invoices:
             if invoice.state not in ('posted', 'paid'):
                 continue
+            # NKH: call paid and post methods only if required to improve perf
             is_reconciled = invoice.reconciled
             if is_reconciled and invoice.state == 'posted':
                 paid.append(invoice)
@@ -1369,6 +1372,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                     to_reconcile.append(line)
             else:
                 if to_reconcile:
+                    # NKH: handle bulk reconcile to improve perf
                     to_reconcile_list.append(to_reconcile)
         if to_reconcile_list:
             Line.bulk_reconcile(to_reconcile_list)
