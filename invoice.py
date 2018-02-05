@@ -617,13 +617,30 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                 del result[key]
         return result
 
-    def get_reconciled(self, name):
-        if not self.lines_to_pay:
-            return False
-        for line in self.lines_to_pay:
-            if not line.reconciliation:
-                return False
-        return True
+    @classmethod
+    def get_reconciled(cls, invoices, name):
+        # NKH: handle reconciled getter as class method to improve perf
+        pool = Pool()
+        MoveLine = pool.get('account.move.line')
+        line = MoveLine.__table__()
+        invoice = cls.__table__()
+        cursor = Transaction().connection.cursor()
+
+        reconciliations = defaultdict(list)
+        for sub_ids in grouped_slice(invoices):
+            red_sql = reduce_ids(invoice.id, sub_ids)
+            cursor.execute(*invoice.join(line,
+                condition=((invoice.move == line.move)
+                    & (invoice.account == line.account))).select(
+                        invoice.id, line.reconciliation,
+                        where=(line.maturity_date != Null) & red_sql,
+                        order_by=(invoice.id)))
+            for invoice_id, line_reconciliation in cursor.fetchall():
+                reconciliations[invoice_id].append(line_reconciliation)
+            for invoice in sub_ids:
+                reconciliations[invoice] = reconciliations[invoice_id] and \
+                    all(r for r in reconciliations[invoice_id])
+        return reconciliations
 
     @classmethod
     def get_lines_to_pay(cls, invoices, name):
@@ -1233,16 +1250,20 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         MoveLine = Pool().get('account.move.line')
 
         new_invoices = []
+        to_reconcile = []
         for invoice in invoices:
             new_invoice, = cls.create([invoice._credit()])
             new_invoices.append(new_invoice)
             if refund:
                 cls.post([new_invoice])
                 if new_invoice.state == 'posted':
-                    MoveLine.reconcile([l for l in invoice.lines_to_pay
+                    # NKH: handle bulk reconcile to improve perf
+                    to_reconcile.append([l for l in invoice.lines_to_pay
                             if not l.reconciliation] +
                         [l for l in new_invoice.lines_to_pay
                             if not l.reconciliation])
+        if to_reconcile:
+            MoveLine.bulk_reconcile(to_reconcile)
         cls.update_taxes(new_invoices)
         return new_invoices
 
@@ -1298,9 +1319,11 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         for invoice in invoices:
             if invoice.state not in ('posted', 'paid'):
                 continue
-            if invoice.reconciled:
+            # NKH: call paid and post methods only if required to improve perf
+            is_reconciled = invoice.reconciled
+            if is_reconciled and invoice.state == 'posted':
                 paid.append(invoice)
-            else:
+            elif (not is_reconciled) and invoice.state == 'paid':
                 posted.append(invoice)
         cls.paid(paid)
         cls.post(posted)
@@ -1337,6 +1360,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                 'state': 'cancel',
                 })
         # Reconcile lines to pay with the cancellation ones if possible
+        to_reconcile_list = []
         for invoice in invoices:
             if not invoice.move or not invoice.cancel_move:
                 continue
@@ -1348,7 +1372,10 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                     to_reconcile.append(line)
             else:
                 if to_reconcile:
-                    Line.reconcile(to_reconcile)
+                    # NKH: handle bulk reconcile to improve perf
+                    to_reconcile_list.append(to_reconcile)
+        if to_reconcile_list:
+            Line.bulk_reconcile(to_reconcile_list)
 
 
 class InvoicePaymentLine(ModelSQL):
