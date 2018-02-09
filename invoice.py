@@ -1043,7 +1043,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
             else:
                 invoice_type += '_invoice'
             grouped_invoices[
-                (invoice.company, invoice.invoice_date, invoice_type)
+                (invoice.company.id, invoice.invoice_date, invoice_type)
                 ].append(invoice.id)
         for key, value in grouped_invoices.iteritems():
             cls._bulk_set_number(value, key[0], key[1], key[2])
@@ -1057,7 +1057,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         if not invoice_ids:
             return
         invoice_date = invoice_date or Date.today()
-        period_id = Period.find(company.id,
+        period_id = Period.find(company,
             date=invoice_date, test_state=True)
         period = Period(period_id)
         if not period:
