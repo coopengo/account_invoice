@@ -6,10 +6,11 @@ from itertools import combinations
 import base64
 import itertools
 
-from sql import Literal, Null
+from sql import Literal, Null, Cast, Expression
 from sql.aggregate import Count, Sum
 from sql.conditionals import Coalesce, Case
-from sql.functions import Round
+from sql.functions import Round, ToChar, CurrentTimestamp
+from sql.operators import Concat
 
 from trytond.model import Workflow, ModelView, ModelSQL, fields, Check
 from trytond.report import Report
@@ -47,6 +48,16 @@ _TYPE2JOURNAL = {
 }
 
 _ZERO = Decimal('0.0')
+
+
+# NKH improve set_number perf (requires RowNumber sql expression)
+class RowNumber(Expression):
+    def __str__(self):
+        return 'ROW_NUMBER() over ()'
+
+    @property
+    def params(self):
+        return []
 
 
 class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
@@ -447,10 +458,10 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         return Config.get_language()
 
     @classmethod
-    def get_type_name(self, invoices, name):
+    def get_type_name(cls, invoices, name):
         type_names = {}
         type2name = {}
-        for type, name in self.fields_get(fields_names=['type']
+        for type, name in cls.fields_get(fields_names=['type']
                 )['type']['selection']:
             type2name[type] = name
         for invoice in invoices:
@@ -1024,6 +1035,73 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         self.write([self], vals)
 
     @classmethod
+    def bulk_set_number(cls, invoices):
+        # NKH improve set_number perf
+        grouped_invoices = defaultdict(list)
+        for invoice in invoices:
+            if invoice.number:
+                continue
+            invoice_type = invoice.type
+            if all(l.amount <= 0 for l in invoice.lines):
+                invoice_type += '_credit_note'
+            else:
+                invoice_type += '_invoice'
+            grouped_invoices[
+                (invoice.company.id, invoice.invoice_date, invoice_type)
+                ].append(invoice.id)
+        for key, value in grouped_invoices.iteritems():
+            cls._bulk_set_number(value, key[0], key[1], key[2])
+
+    @classmethod
+    def _bulk_set_number(cls, invoice_ids, company, invoice_date, invoice_type):
+        # NKH improve set_number perf
+        pool = Pool()
+        Date = pool.get('ir.date')
+        Period = pool.get('account.period')
+        AccountInvoice = pool.get('account.invoice')
+        if not invoice_ids:
+            return
+        invoice_date = invoice_date or Date.today()
+        period_id = Period.find(company,
+            date=invoice_date, test_state=True)
+        period = Period(period_id)
+        if not period:
+            cls.raise_user_error('no_period', invoice_date)
+        sequence = period.get_invoice_sequence(invoice_type)
+
+        with Transaction().set_context(date=invoice_date):
+            transaction = Transaction()
+            transaction.database.lock(transaction.connection, sequence._table)
+            prefix = sequence._process(sequence.prefix, invoice_date)
+            suffix = sequence._process(sequence.suffix, invoice_date)
+            nbr_next = sequence.number_next_internal
+            increment = sequence.number_increment
+            number_query = None
+            if not sequence.padding:
+                number_query = Concat(Concat(prefix, Cast((RowNumber() - 1)
+                            * increment + nbr_next, 'VARCHAR')),
+                    suffix).as_('number')
+            else:
+                number_query = Concat(Concat(prefix, ToChar((RowNumber() - 1)
+                            * increment + nbr_next,
+                            'FM' + ('0' * sequence.padding))),
+                    suffix).as_('number')
+            account_invoice = AccountInvoice.__table__()
+            to_update = account_invoice.select(account_invoice.id.as_('inv_id'),
+                number_query,
+                where=account_invoice.id.in_(invoice_ids))
+            query = account_invoice.update(columns=[account_invoice.number,
+                account_invoice.write_date],
+                from_=[to_update],
+                values=[to_update.number, CurrentTimestamp()],
+                where=account_invoice.id == to_update.inv_id)
+            cursor = transaction.connection.cursor()
+            cursor.execute(*query)
+            sequence.number_next_internal = nbr_next + \
+                len(invoice_ids) * increment
+            sequence.save()
+
+    @classmethod
     def check_modify(cls, invoices):
         '''
         Check if the invoices can be modified
@@ -1294,11 +1372,9 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
     @Workflow.transition('posted')
     def post(cls, invoices):
         Move = Pool().get('account.move')
-
-        moves = []
-        for invoice in invoices:
-            invoice.set_number()
-            moves.append(invoice.create_move())
+        # NKH improve set_number perf
+        cls.bulk_set_number(invoices)
+        moves = [invoice.create_move() for invoice in invoices]
         cls.write([i for i in invoices if i.state != 'posted'], {
                 'state': 'posted',
                 })
