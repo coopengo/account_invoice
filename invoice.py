@@ -50,6 +50,7 @@ _TYPE2JOURNAL = {
 _ZERO = Decimal('0.0')
 
 
+# NKH improve set_number perf (requires RowNumber sql expression)
 class RowNumber(Expression):
     def __str__(self):
         return 'ROW_NUMBER() over ()'
@@ -1035,6 +1036,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
 
     @classmethod
     def bulk_set_number(cls, invoices):
+        # NKH improve set_number perf
         grouped_invoices = defaultdict(list)
         for invoice in invoices:
             invoice_type = invoice.type
@@ -1050,6 +1052,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
 
     @classmethod
     def _bulk_set_number(cls, invoice_ids, company, invoice_date, invoice_type):
+        # NKH improve set_number perf
         pool = Pool()
         Date = pool.get('ir.date')
         Period = pool.get('account.period')
@@ -1367,7 +1370,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
     @Workflow.transition('posted')
     def post(cls, invoices):
         Move = Pool().get('account.move')
-
+        # NKH improve set_number perf
         cls.bulk_set_number(invoices)
         moves = [invoice.create_move() for invoice in invoices]
         cls.write([i for i in invoices if i.state != 'posted'], {
