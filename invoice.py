@@ -1039,6 +1039,8 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         # NKH improve set_number perf
         grouped_invoices = defaultdict(list)
         for invoice in invoices:
+            if invoice.number:
+                continue
             invoice_type = invoice.type
             if all(l.amount <= 0 for l in invoice.lines):
                 invoice_type += '_credit_note'
