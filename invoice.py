@@ -628,30 +628,13 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                 del result[key]
         return result
 
-    @classmethod
-    def get_reconciled(cls, invoices, name):
-        # NKH: handle reconciled getter as class method to improve perf
-        pool = Pool()
-        MoveLine = pool.get('account.move.line')
-        line = MoveLine.__table__()
-        invoice = cls.__table__()
-        cursor = Transaction().connection.cursor()
-
-        reconciliations = defaultdict(list)
-        for sub_ids in grouped_slice(invoices):
-            red_sql = reduce_ids(invoice.id, sub_ids)
-            cursor.execute(*invoice.join(line,
-                condition=((invoice.move == line.move)
-                    & (invoice.account == line.account))).select(
-                        invoice.id, line.reconciliation,
-                        where=(line.maturity_date != Null) & red_sql,
-                        order_by=(invoice.id)))
-            for invoice_id, line_reconciliation in cursor.fetchall():
-                reconciliations[invoice_id].append(line_reconciliation)
-            for invoice in sub_ids:
-                reconciliations[invoice] = reconciliations[invoice_id] and \
-                    all(r for r in reconciliations[invoice_id])
-        return reconciliations
+    def get_reconciled(self, name):
+        if not self.lines_to_pay:
+            return False
+        for line in self.lines_to_pay:
+            if not line.reconciliation:
+                return False
+        return True
 
     @classmethod
     def get_lines_to_pay(cls, invoices, name):
@@ -1037,6 +1020,8 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
     @classmethod
     def bulk_set_number(cls, invoices):
         # NKH improve set_number perf
+        Date = Pool().get('ir.date')
+        today = Date.today()
         grouped_invoices = defaultdict(list)
         for invoice in invoices:
             if invoice.number:
@@ -1047,21 +1032,32 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
             else:
                 invoice_type += '_invoice'
             grouped_invoices[
-                (invoice.company.id, invoice.invoice_date, invoice_type)
+                (invoice.company.id, invoice.accounting_date
+                    or invoice.invoice_date or today, invoice_type)
                 ].append(invoice.id)
         for key, value in grouped_invoices.iteritems():
             cls._bulk_set_number(value, key[0], key[1], key[2])
+        # for invoice in invoices:
+        #     local_cache = invoice._local_cache.get(invoice.id)
+        #     if local_cache:
+        #         local_cache.clear()
+        # for cache in Transaction().cache.itervalues():
+        #     if cls.__name__ in cache:
+        #         for invoice in invoices:
+        #             if invoice.id in cache[cls.__name__]:
+        #                 cache[cls.__name__][invoice.id].clear()
 
     @classmethod
     def _bulk_set_number(cls, invoice_ids, company, invoice_date, invoice_type):
         # NKH improve set_number perf
         pool = Pool()
         Date = pool.get('ir.date')
+        today = Date.today()
         Period = pool.get('account.period')
         AccountInvoice = pool.get('account.invoice')
         if not invoice_ids:
             return
-        invoice_date = invoice_date or Date.today()
+        invoice_date = invoice_date or today
         period_id = Period.find(company,
             date=invoice_date, test_state=True)
         period = Period(period_id)
@@ -1090,10 +1086,16 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
             to_update = account_invoice.select(account_invoice.id.as_('inv_id'),
                 number_query,
                 where=account_invoice.id.in_(invoice_ids))
-            query = account_invoice.update(columns=[account_invoice.number,
-                account_invoice.write_date],
+            columns_to_update = [account_invoice.number,
+                account_invoice.write_date]
+            values_to_updates = [to_update.number, CurrentTimestamp()]
+            if invoice_type[:3] == 'out':
+                columns_to_update.append(account_invoice.invoice_date)
+                values_to_updates.append(
+                    Coalesce(account_invoice.invoice_date, today))
+            query = account_invoice.update(columns=columns_to_update,
                 from_=[to_update],
-                values=[to_update.number, CurrentTimestamp()],
+                values=values_to_updates,
                 where=account_invoice.id == to_update.inv_id)
             cursor = transaction.connection.cursor()
             cursor.execute(*query)
