@@ -1037,15 +1037,15 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                 ].append(invoice.id)
         for key, value in grouped_invoices.iteritems():
             cls._bulk_set_number(value, key[0], key[1], key[2])
-        # for invoice in invoices:
-        #     local_cache = invoice._local_cache.get(invoice.id)
-        #     if local_cache:
-        #         local_cache.clear()
-        # for cache in Transaction().cache.itervalues():
-        #     if cls.__name__ in cache:
-        #         for invoice in invoices:
-        #             if invoice.id in cache[cls.__name__]:
-        #                 cache[cls.__name__][invoice.id].clear()
+        for invoice in invoices:
+            local_cache = invoice._local_cache.get(invoice.id)
+            if local_cache:
+                local_cache.clear()
+        for cache in Transaction().cache.itervalues():
+            if cls.__name__ in cache:
+                for invoice in invoices:
+                    if invoice.id in cache[cls.__name__]:
+                        cache[cls.__name__][invoice.id].clear()
 
     @classmethod
     def _bulk_set_number(cls, invoice_ids, company, invoice_date, invoice_type):
