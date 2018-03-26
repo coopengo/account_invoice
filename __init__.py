@@ -39,6 +39,7 @@ def register():
         PayInvoice,
         CreditInvoice,
         PartyReplace,
+        PartyErase,
         RenewFiscalYear,
         module='account_invoice', type_='wizard')
     Pool.register(
