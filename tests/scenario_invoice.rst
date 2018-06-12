@@ -12,7 +12,7 @@ Imports::
     >>> from trytond.modules.company.tests.tools import create_company, \
     ...     get_company
     >>> from trytond.modules.account.tests.tools import create_fiscalyear, \
-    ...     create_chart, get_accounts, create_tax, set_tax_code
+    ...     create_chart, get_accounts, create_tax, create_tax_code
     >>> from trytond.modules.account_invoice.tests.tools import \
     ...     set_fiscalyear_invoice_sequences
     >>> today = datetime.date.today()
@@ -36,6 +36,7 @@ Create fiscal year::
     ...     create_fiscalyear(company))
     >>> fiscalyear.click('create_period')
     >>> period = fiscalyear.periods[0]
+    >>> period_ids = [p.id for p in fiscalyear.periods]
 
 Create chart of accounts::
 
@@ -49,12 +50,17 @@ Create chart of accounts::
 
 Create tax::
 
-    >>> tax = set_tax_code(create_tax(Decimal('.10')))
+    >>> TaxCode = Model.get('account.tax.code')
+    >>> tax = create_tax(Decimal('.10'))
     >>> tax.save()
-    >>> invoice_base_code = tax.invoice_base_code
-    >>> invoice_tax_code = tax.invoice_tax_code
-    >>> credit_note_base_code = tax.credit_note_base_code
-    >>> credit_note_tax_code = tax.credit_note_tax_code
+    >>> invoice_base_code = create_tax_code(tax, 'base', 'invoice')
+    >>> invoice_base_code.save()
+    >>> invoice_tax_code = create_tax_code(tax, 'tax', 'invoice')
+    >>> invoice_tax_code.save()
+    >>> credit_note_base_code = create_tax_code(tax, 'base', 'credit')
+    >>> credit_note_base_code.save()
+    >>> credit_note_tax_code = create_tax_code(tax, 'tax', 'credit')
+    >>> credit_note_tax_code.save()
 
 Set Cash journal::
 
@@ -168,17 +174,21 @@ Post invoice::
     Decimal('0.00')
     >>> account_tax.credit
     Decimal('20.00')
-    >>> invoice_base_code.reload()
-    >>> invoice_base_code.sum
+    >>> with config.set_context(periods=period_ids):
+    ...     invoice_base_code = TaxCode(invoice_base_code.id)
+    ...     invoice_base_code.amount
     Decimal('200.00')
-    >>> invoice_tax_code.reload()
-    >>> invoice_tax_code.sum
+    >>> with config.set_context(periods=period_ids):
+    ...     invoice_tax_code = TaxCode(invoice_tax_code.id)
+    ...     invoice_tax_code.amount
     Decimal('20.00')
-    >>> credit_note_base_code.reload()
-    >>> credit_note_base_code.sum
+    >>> with config.set_context(periods=period_ids):
+    ...     credit_note_base_code = TaxCode(credit_note_base_code.id)
+    ...     credit_note_base_code.amount
     Decimal('0.00')
-    >>> credit_note_tax_code.reload()
-    >>> credit_note_tax_code.sum
+    >>> with config.set_context(periods=period_ids):
+    ...     credit_note_tax_code = TaxCode(credit_note_tax_code.id)
+    ...     credit_note_tax_code.amount
     Decimal('0.00')
 
 Credit invoice with refund::
@@ -189,6 +199,8 @@ Credit invoice with refund::
     >>> invoice.reload()
     >>> invoice.state
     u'paid'
+    >>> invoice.reconciled == today
+    True
     >>> receivable.reload()
     >>> receivable.debit
     Decimal('240.00')
@@ -204,17 +216,21 @@ Credit invoice with refund::
     Decimal('20.00')
     >>> account_tax.credit
     Decimal('20.00')
-    >>> invoice_base_code.reload()
-    >>> invoice_base_code.sum
+    >>> with config.set_context(periods=period_ids):
+    ...     invoice_base_code = TaxCode(invoice_base_code.id)
+    ...     invoice_base_code.amount
     Decimal('200.00')
-    >>> invoice_tax_code.reload()
-    >>> invoice_tax_code.sum
+    >>> with config.set_context(periods=period_ids):
+    ...     invoice_tax_code = TaxCode(invoice_tax_code.id)
+    ...     invoice_tax_code.amount
     Decimal('20.00')
-    >>> credit_note_base_code.reload()
-    >>> credit_note_base_code.sum
+    >>> with config.set_context(periods=period_ids):
+    ...     credit_note_base_code = TaxCode(credit_note_base_code.id)
+    ...     credit_note_base_code.amount
     Decimal('200.00')
-    >>> credit_note_tax_code.reload()
-    >>> credit_note_tax_code.sum
+    >>> with config.set_context(periods=period_ids):
+    ...     credit_note_tax_code = TaxCode(credit_note_tax_code.id)
+    ...     credit_note_tax_code.amount
     Decimal('20.00')
 
 Pay invoice::

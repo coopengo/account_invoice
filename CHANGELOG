@@ -1,3 +1,18 @@
+Version 4.8.1 - 2018-05-21
+* Bug fixes (see mercurial logs for details)
+
+Version 4.8.0 - 2018-04-23
+* Bug fixes (see mercurial logs for details)
+* Show invoice payment on Move Line
+* Remove payment lines which actually do not pay the Invoice
+* Ensure payment lines are linked to only one Invoice
+* Ensure payments on Invoice does not exceed invoice amount
+* Add methods to add and remove payments on Invoice
+* Check pending invoice to erase party
+* Add invoice usage to party's contact mechanisms
+* Show reconciled date on invoice
+* Make description on invoice line optional
+
 Version 4.6.3 - 2018-04-03
 * Bug fixes (see mercurial logs for details)
 
