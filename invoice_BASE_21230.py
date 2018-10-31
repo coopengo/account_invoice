@@ -3,14 +3,16 @@
 from decimal import Decimal
 from collections import defaultdict, namedtuple
 from itertools import combinations
+import base64
+import itertools
 
-from sql import Null
-from sql.aggregate import Sum
+from sql import Literal, Null
+from sql.aggregate import Count, Sum
 from sql.conditionals import Coalesce, Case
 from sql.functions import Round
 
 from trytond.model import Workflow, ModelView, ModelSQL, fields, Check, \
-    sequence_ordered, Unique, DeactivableMixin
+    sequence_ordered, Unique
 from trytond.report import Report
 from trytond.wizard import Wizard, StateView, StateTransition, StateAction, \
     Button
@@ -26,7 +28,7 @@ from trytond.modules.account.tax import TaxableMixin
 from trytond.modules.product import price_digits
 
 __all__ = ['Invoice', 'InvoicePaymentLine', 'InvoiceLine',
-    'InvoiceLineTax', 'InvoiceTax', 'PaymentMethod',
+    'InvoiceLineTax', 'InvoiceTax',
     'InvoiceReport',
     'PayInvoiceStart', 'PayInvoiceAsk', 'PayInvoice',
     'CreditInvoiceStart', 'CreditInvoice']
@@ -78,7 +80,11 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         'on_change_with_company_party')
     tax_identifier = fields.Many2One(
         'party.identifier', "Tax Identifier",
-        states=_STATES, depends=_DEPENDS)
+        states=_STATES,
+        domain=[
+            ('party', '=', Eval('company_party', -1)),
+            ],
+        depends=_DEPENDS + ['company_party'])
     type = fields.Selection(_TYPE, 'Type', select=True,
         required=True, states={
             'readonly': ((Eval('state') != 'draft')
@@ -220,10 +226,9 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
             ('id', 'DESC'),
             ]
         cls.tax_identifier.domain = [
-            ('party', '=', Eval('company_party', -1)),
+            cls.tax_identifier.domain,
             ('type', 'in', cls._tax_identifier_types()),
             ]
-        cls.tax_identifier.depends += ['company_party']
         cls._error_messages.update({
                 'missing_tax_line': ('Invoice "%s" has taxes defined but not '
                     'on invoice lines.\nRe-compute the invoice.'),
@@ -236,6 +241,16 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                     'invoice "%(invoice)s" on fiscalyear "%(fiscalyear)s".'),
                 'modify_invoice': ('You can not modify invoice "%s" because '
                     'it is posted, paid or cancelled.'),
+                'same_debit_account': ('The debit account on journal '
+                    '"%(journal)s" is the same as invoice "%(invoice)s"\'s '
+                    'account.'),
+                'missing_debit_account': ('The debit account on journal "%s" '
+                    'is missing.'),
+                'same_credit_account': ('The credit account on journal '
+                    '"%(journal)s" is the same as invoice "%(invoice)s"\'s '
+                    'account.'),
+                'missing_credit_account': ('The credit account on journal '
+                    '"%s" is missing.'),
                 'same_account_on_line': ('Invoice "%(invoice)s" uses the same '
                     'account "%(account)s" for the invoice and in line '
                     '"%(line)s".'),
@@ -275,11 +290,10 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                     },
                 'draft': {
                     'invisible': (~Eval('state').in_(['cancel', 'validated'])
-                        | ((Eval('state') == 'cancel')
-                            & Eval('cancel_move', -1))),
-                    'icon': If(Eval('state') == 'cancel', 'tryton-undo',
-                        'tryton-back'),
-                    'depends': ['state'],
+                        | ((Eval('state') == 'cancel') & Eval('cancel_move'))),
+                    'icon': If(Eval('state') == 'cancel', 'tryton-clear',
+                        'tryton-go-previous'),
+                    'depends': ['state', 'cancel_move'],
                     },
                 'validate_invoice': {
                     'pre_validate':
@@ -304,16 +318,13 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                     'depends': ['state'],
                     },
                 })
-        cls.__rpc__.update({
-                'post': RPC(
-                    readonly=False, instantiate=0, fresh_session=True),
-                })
 
     @classmethod
     def __register__(cls, module_name):
         pool = Pool()
         Line = pool.get('account.invoice.line')
         Tax = pool.get('account.invoice.tax')
+        TableHandler = backend.get('TableHandler')
         sql_table = cls.__table__()
         line = Line.__table__()
         tax = Tax.__table__()
@@ -321,7 +332,45 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         super(Invoice, cls).__register__(module_name)
         transaction = Transaction()
         cursor = transaction.connection.cursor()
-        table = cls.__table_handler__(module_name)
+        table = TableHandler(cls, module_name)
+
+        # Migration from 1.2 invoice_date is no more required
+        table.not_null_action('invoice_date', action='remove')
+
+        # Migration from 2.0 invoice_report renamed into invoice_report_cache
+        # to remove base64 encoding
+
+        if (table.column_exist('invoice_report')
+                and table.column_exist('invoice_report_cache')):
+            limit = transaction.database.IN_MAX
+            cursor.execute(*sql_table.select(Count(Literal(1))))
+            invoice_count, = cursor.fetchone()
+            for offset in range(0, invoice_count, limit):
+                cursor.execute(*sql_table.select(
+                        sql_table.id, sql_table.invoice_report,
+                        order_by=sql_table.id,
+                        limit=limit, offset=offset))
+                for invoice_id, report in cursor.fetchall():
+                    if report:
+                        report = fields.Binary.cast(
+                            base64.decodestring(bytes(report)))
+                        cursor.execute(*sql_table.update(
+                                columns=[sql_table.invoice_report_cache],
+                                values=[report],
+                                where=sql_table.id == invoice_id))
+            table.drop_column('invoice_report')
+
+        # Migration from 2.6:
+        # - proforma renamed into validated
+        # - open renamed into posted
+        cursor.execute(*sql_table.update(
+                columns=[sql_table.state],
+                values=['validated'],
+                where=sql_table.state == 'proforma'))
+        cursor.execute(*sql_table.update(
+                columns=[sql_table.state],
+                values=['posted'],
+                where=sql_table.state == 'open'))
 
         # Migration from 3.8: remove invoice/credit note type
         cursor.execute(*sql_table.select(sql_table.id,
@@ -365,11 +414,11 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                         values=[type_],
                         where=sql_table.type == '%s_credit_note' % type_))
 
-        # Migration from 4.0: Drop not null on payment_term
-        table.not_null_action('payment_term', 'remove')
-
         # Add index on create_date
         table.index_action('create_date', action='add')
+
+        # Migration from 4.0: Drop not null on payment_term
+        table.not_null_action('payment_term', 'remove')
 
     @staticmethod
     def default_type():
@@ -410,25 +459,22 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         if len(payment_terms) == 1:
             return payment_terms[0].id
 
-    @fields.depends('party', 'type', 'accounting_date', 'invoice_date')
-    def _get_account_payment_term(self):
+    def __get_account_payment_term(self):
         '''
         Return default account and payment term
         '''
         self.account = None
         if self.party:
-            with Transaction().set_context(
-                    date=self.accounting_date or self.invoice_date):
-                if self.type == 'out':
-                    self.account = self.party.account_receivable_used
-                    if self.party.customer_payment_term:
-                        self.payment_term = self.party.customer_payment_term
-                elif self.type == 'in':
-                    self.account = self.party.account_payable_used
-                    if self.party.supplier_payment_term:
-                        self.payment_term = self.party.supplier_payment_term
+            if self.type == 'out':
+                self.account = self.party.account_receivable_used
+                if self.party.customer_payment_term:
+                    self.payment_term = self.party.customer_payment_term
+            elif self.type == 'in':
+                self.account = self.party.account_payable_used
+                if self.party.supplier_payment_term:
+                    self.payment_term = self.party.supplier_payment_term
 
-    @fields.depends('type', methods=['_get_account_payment_term'])
+    @fields.depends('type', 'party', 'company')
     def on_change_type(self):
         Journal = Pool().get('account.journal')
         journals = Journal.search([
@@ -437,12 +483,12 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                 ], limit=1)
         if journals:
             self.journal, = journals
-        self._get_account_payment_term()
+        self.__get_account_payment_term()
 
-    @fields.depends('party', methods=['_get_account_payment_term'])
+    @fields.depends('party', 'payment_term', 'type', 'company')
     def on_change_party(self):
         self.invoice_address = None
-        self._get_account_payment_term()
+        self.__get_account_payment_term()
 
         if self.party:
             self.invoice_address = self.party.address_get(type='invoice')
@@ -468,10 +514,10 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         return Config.get_language()
 
     @classmethod
-    def get_type_name(cls, invoices, name):
+    def get_type_name(self, invoices, name):
         type_names = {}
         type2name = {}
-        for type, name in cls.fields_get(fields_names=['type']
+        for type, name in self.fields_get(fields_names=['type']
                 )['type']['selection']:
             type2name[type] = name
         for invoice in invoices:
@@ -530,7 +576,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         for key in computed_taxes:
             if key not in tax_keys:
                 self.tax_amount += computed_taxes[key]['amount']
-                value = InvoiceTax.default_get(list(InvoiceTax._fields.keys()))
+                value = InvoiceTax.default_get(InvoiceTax._fields.keys())
                 value.update(computed_taxes[key])
                 invoice_tax = InvoiceTax(**value)
                 if invoice_tax.tax:
@@ -600,7 +646,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                     ).select(invoice.id,
                     Coalesce(Sum(
                             Case((line.second_currency == invoice.currency,
-                                line.amount_second_currency),
+                                    line.amount_second_currency),
                                 else_=line.debit - line.credit)),
                         0).cast(type_name),
                     where=(invoice.account == line.account) & red_sql,
@@ -634,7 +680,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
             'tax_amount': tax_amount,
             'total_amount': total_amount,
             }
-        for key in list(result.keys()):
+        for key in result.keys():
             if key not in names:
                 del result[key]
         return result
@@ -705,7 +751,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                 with Transaction().set_context(date=invoice.currency_date):
                     amount_currency += Currency.compute(
                         invoice.company.currency, amount, invoice.currency)
-            if invoice.type == 'in' and amount_currency:
+            if invoice.type == 'in':
                 amount_currency *= -1
             res[invoice.id] = amount_currency
         return res
@@ -834,7 +880,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
 
     def _compute_taxes(self):
         taxes = self._get_taxes()
-        for tax in taxes.values():
+        for tax in taxes.itervalues():
             tax['invoice'] = self.id
         return taxes
 
@@ -849,7 +895,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                 continue
             computed_taxes = invoice._compute_taxes()
             if not invoice.taxes:
-                to_create.extend(computed_taxes.values())
+                to_create.extend([tax for tax in computed_taxes.values()])
             else:
                 tax_keys = []
                 for tax in invoice.taxes:
@@ -1002,9 +1048,8 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         else:
             pattern = pattern.copy()
 
-        accounting_date = self.accounting_date or self.invoice_date
         period_id = Period.find(
-            self.company.id, date=accounting_date,
+            self.company.id, date=self.accounting_date or self.invoice_date,
             test_state=self.type != 'in')
 
         period = Period(period_id)
@@ -1029,7 +1074,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                     'invoice': self.rec_name,
                     'fiscalyear': fiscalyear.rec_name,
                     })
-        with Transaction().set_context(date=accounting_date):
+        with Transaction().set_context(date=self.invoice_date):
             return Sequence.get_id(sequence.id)
 
     @classmethod
@@ -1055,14 +1100,11 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                 cls.raise_user_error('modify_invoice', (invoice.rec_name,))
 
     def get_rec_name(self, name):
-        items = []
         if self.number:
-            items.append(self.number)
-        if self.reference:
-            items.append('[%s]' % self.reference)
-        if not items:
-            items.append('(%s)' % self.id)
-        return ' '.join(items)
+            return self.number
+        elif self.reference:
+            return '[%s]' % self.reference
+        return '(%s)' % self.id
 
     @classmethod
     def search_rec_name(cls, name, clause):
@@ -1077,7 +1119,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
             ]
 
     def get_origins(self, name):
-        return ', '.join(set(filter(None,
+        return ', '.join(set(itertools.ifilter(None,
                     (l.origin_name for l in self.lines))))
 
     @classmethod
@@ -1113,17 +1155,17 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
     def copy(cls, invoices, default=None):
         if default is None:
             default = {}
-        else:
-            default = default.copy()
-        default.setdefault('number', None)
-        default.setdefault('move', None)
-        default.setdefault('cancel_move', None)
-        default.setdefault('invoice_report_cache', None)
-        default.setdefault('invoice_report_format', None)
-        default.setdefault('payment_lines', None)
+        default = default.copy()
+        default['state'] = 'draft'
+        default['number'] = None
+        default['move'] = None
+        default['cancel_move'] = None
+        default['invoice_report_cache'] = None
+        default['invoice_report_format'] = None
+        default['payment_lines'] = None
         default.setdefault('invoice_date', None)
         default.setdefault('accounting_date', None)
-        default.setdefault('lines_to_pay', None)
+        default['lines_to_pay'] = None
         return super(Invoice, cls).copy(invoices, default=default)
 
     @classmethod
@@ -1167,7 +1209,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
             if not l.reconciliation]
 
         best = Result([], self.total_amount)
-        for n in range(len(lines), 0, -1):
+        for n in xrange(len(lines), 0, -1):
             for comb_lines in combinations(lines, n):
                 remainder = sum((l.debit - l.credit) for l in comb_lines)
                 remainder -= amount
@@ -1178,7 +1220,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                     best = result
         return best
 
-    def pay_invoice(self, amount, payment_method, date, description,
+    def pay_invoice(self, amount, journal, date, description,
             amount_second_currency=None, second_currency=None):
         '''
         Adds a payment of amount to an invoice using the journal, date and
@@ -1190,8 +1232,8 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         Line = pool.get('account.move.line')
         Period = pool.get('account.period')
 
-        line1 = Line(account=self.account)
-        line2 = Line()
+        line1 = Line(description=description, account=self.account)
+        line2 = Line(description=description)
         lines = [line1, line2]
 
         if amount >= 0:
@@ -1207,10 +1249,18 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
 
         line2.debit, line2.credit = line1.credit, line1.debit
         if line2.debit:
-            payment_acccount = 'debit_account'
+            account_journal = 'debit_account'
         else:
-            payment_acccount = 'credit_account'
-        line2.account = getattr(payment_method, payment_acccount)
+            account_journal = 'credit_account'
+        line2.account = getattr(journal, account_journal)
+        if self.account == line2.account:
+            self.raise_user_error('same_%s' % account_journal, {
+                    'journal': journal.rec_name,
+                    'invoice': self.rec_name,
+                    })
+        if not line2.account:
+            self.raise_user_error('missing_%s' % account_journal,
+                (journal.rec_name,))
 
         for line in lines:
             if line.account.party_required:
@@ -1222,9 +1272,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
 
         period_id = Period.find(self.company.id, date=date)
 
-        move = Move(
-            journal=payment_method.journal, period=period_id, date=date,
-            origin=self, description=description,
+        move = Move(journal=journal, period=period_id, date=date,
             company=self.company, lines=lines)
         move.save()
         Move.post([move])
@@ -1239,7 +1287,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
     def add_payment_lines(cls, payments):
         "Add value lines to the key invoice from the payment dictionary."
         to_write = []
-        for invoice, lines in payments.items():
+        for invoice, lines in payments.iteritems():
             if invoice.state == 'paid':
                 cls.raise_user_error('modify_payment_lines_invoice_paid', {
                         'invoice': invoice.rec_name,
@@ -1256,7 +1304,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         PaymentLine = pool.get('account.invoice-account.move.line')
 
         payments = defaultdict(list)
-        ids = list(map(int, lines))
+        ids = map(int, lines)
         for sub_ids in grouped_slice(ids):
             payment_lines = PaymentLine.search([
                     ('line', 'in', list(sub_ids)),
@@ -1265,7 +1313,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                 payments[payment_line.invoice].append(payment_line.line)
 
         to_write = []
-        for invoice, lines in payments.items():
+        for invoice, lines in payments.iteritems():
             if invoice.state == 'paid':
                 cls.raise_user_error('modify_payment_lines_invoice_paid', {
                         'invoice': invoice.rec_name,
@@ -1312,7 +1360,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         cls.update_taxes(new_invoices)
         if refund:
             cls.post(new_invoices)
-            for invoice, new_invoice in zip(invoices, new_invoices):
+            for invoice, new_invoice in itertools.izip(invoices, new_invoices):
                 if new_invoice.state == 'posted':
                     MoveLine.reconcile([l for l in invoice.lines_to_pay
                             if not l.reconciliation] +
@@ -1598,11 +1646,6 @@ class InvoiceLine(sequence_ordered(), ModelSQL, ModelView, TaxableMixin):
             'required': Eval('type') == 'line',
             'readonly': _states['readonly'],
             },
-        context={
-            'date': If(Bool(Eval('_parent_invoice.accounting_date')),
-                Eval('_parent_invoice.accounting_date'),
-                Eval('_parent_invoice.invoice_date')),
-            },
         depends=['type', 'invoice_type', 'company'] + _depends)
     unit_price = fields.Numeric('Unit Price', digits=price_digits,
         states={
@@ -1711,10 +1754,17 @@ class InvoiceLine(sequence_ordered(), ModelSQL, ModelView, TaxableMixin):
         pool = Pool()
         Invoice = pool.get('account.invoice')
         invoice = Invoice.__table__()
+        TableHandler = backend.get('TableHandler')
         sql_table = cls.__table__()
         super(InvoiceLine, cls).__register__(module_name)
         cursor = Transaction().connection.cursor()
-        table = cls.__table_handler__(module_name)
+        table = TableHandler(cls, module_name)
+
+        # Migration from 1.0 invoice is no more required
+        table.not_null_action('invoice', action='remove')
+
+        # Migration from 2.4: drop required on sequence
+        table.not_null_action('sequence', action='remove')
 
         # Migration from 3.4: company is required
         cursor.execute(*sql_table.join(invoice,
@@ -1837,7 +1887,7 @@ class InvoiceLine(sequence_ordered(), ModelSQL, ModelView, TaxableMixin):
     def get_invoice_taxes(self, name):
         if not self.invoice:
             return
-        taxes_keys = list(self._get_taxes().keys())
+        taxes_keys = self._get_taxes().keys()
         taxes = []
         for tax in self.invoice.taxes:
             if tax.manual:
@@ -1855,9 +1905,7 @@ class InvoiceLine(sequence_ordered(), ModelSQL, ModelView, TaxableMixin):
         return {}
 
     @fields.depends('product', 'unit', '_parent_invoice.type',
-        '_parent_invoice.party', 'party', 'invoice', 'invoice_type',
-        '_parent_invoice.invoice_date', '_parent_invoice.accounting_date',
-        methods=['_get_tax_rule_pattern'])
+        '_parent_invoice.party', 'party', 'invoice', 'invoice_type')
     def on_change_product(self):
         if not self.product:
             return
@@ -1868,15 +1916,12 @@ class InvoiceLine(sequence_ordered(), ModelSQL, ModelView, TaxableMixin):
         elif self.party:
             party = self.party
 
-        date = (self.invoice.accounting_date or self.invoice.invoice_date
-            if self.invoice else None)
         if self.invoice and self.invoice.type:
             type_ = self.invoice.type
         else:
             type_ = self.invoice_type
         if type_ == 'in':
-            with Transaction().set_context(date=date):
-                self.account = self.product.account_expense_used
+            self.account = self.product.account_expense_used
             taxes = []
             pattern = self._get_tax_rule_pattern()
             for tax in self.product.supplier_taxes_used:
@@ -1892,8 +1937,7 @@ class InvoiceLine(sequence_ordered(), ModelSQL, ModelView, TaxableMixin):
                     taxes.extend(tax_ids)
             self.taxes = taxes
         else:
-            with Transaction().set_context(date=date):
-                self.account = self.product.account_revenue_used
+            self.account = self.product.account_revenue_used
             taxes = []
             pattern = self._get_tax_rule_pattern()
             for tax in self.product.customer_taxes_used:
@@ -1921,8 +1965,7 @@ class InvoiceLine(sequence_ordered(), ModelSQL, ModelView, TaxableMixin):
 
     @fields.depends('account', 'product', 'invoice',
         '_parent_invoice.party', '_parent_invoice.type',
-        'party', 'invoice', 'invoice_type',
-        methods=['_get_tax_rule_pattern'])
+        'party', 'invoice', 'invoice_type')
     def on_change_account(self):
         if self.product:
             return
@@ -2024,8 +2067,7 @@ class InvoiceLine(sequence_ordered(), ModelSQL, ModelView, TaxableMixin):
     def copy(cls, lines, default=None):
         if default is None:
             default = {}
-        else:
-            default = default.copy()
+        default = default.copy()
         default.setdefault('origin', None)
         return super(InvoiceLine, cls).copy(lines, default=default)
 
@@ -2197,9 +2239,13 @@ class InvoiceTax(sequence_ordered(), ModelSQL, ModelView):
 
     @classmethod
     def __register__(cls, module_name):
+        TableHandler = backend.get('TableHandler')
+        table = TableHandler(cls, module_name)
+
         super(InvoiceTax, cls).__register__(module_name)
 
-        table = cls.__table_handler__(module_name)
+        # Migration from 2.4: drop required on sequence
+        table.not_null_action('sequence', action='remove')
 
         # Migration from 4.6: drop base_sign and tax_sign
         table.not_null_action('base_sign', action='remove')
@@ -2360,33 +2406,6 @@ class InvoiceTax(sequence_ordered(), ModelSQL, ModelView):
         return line
 
 
-class PaymentMethod(DeactivableMixin, ModelSQL, ModelView):
-    'Payment Method'
-    __name__ = 'account.invoice.payment.method'
-    company = fields.Many2One('company.company', "Company", required=True)
-    name = fields.Char("Name", required=True, translate=True)
-    journal = fields.Many2One('account.journal', "Journal", required=True,
-        domain=[('type', '=', 'cash')])
-    credit_account = fields.Many2One('account.account', "Credit Account",
-        required=True,
-        domain=[
-            ('kind', '!=', 'view'),
-            ('company', '=', Eval('company')),
-            ],
-        depends=['company'])
-    debit_account = fields.Many2One('account.account', "Debit Account",
-        required=True,
-        domain=[
-            ('kind', '!=', 'view'),
-            ('company', '=', Eval('company')),
-            ],
-        depends=['company'])
-
-    @classmethod
-    def default_company(cls):
-        return Transaction().context.get('company')
-
-
 class InvoiceReport(Report):
     __name__ = 'account.invoice'
 
@@ -2434,11 +2453,8 @@ class InvoiceReport(Report):
 
     @classmethod
     def get_context(cls, records, data):
-        pool = Pool()
-        Date = pool.get('ir.date')
         context = super(InvoiceReport, cls).get_context(records, data)
         context['invoice'] = context['record']
-        context['today'] = Date.today()
         return context
 
 
@@ -2450,17 +2466,8 @@ class PayInvoiceStart(ModelView):
     currency = fields.Many2One('currency.currency', 'Currency', required=True)
     currency_digits = fields.Integer('Currency Digits', readonly=True)
     description = fields.Char('Description', size=None)
-    company = fields.Many2One('company.company', "Company", readonly=True)
-    invoice_account = fields.Many2One(
-        'account.account', "Invoice Account", readonly=True)
-    payment_method = fields.Many2One(
-        'account.invoice.payment.method', "Payment Method", required=True,
-        domain=[
-            ('company', '=', Eval('company')),
-            ('debit_account', '!=', Eval('invoice_account')),
-            ('credit_account', '!=', Eval('invoice_account')),
-            ],
-        depends=['company', 'amount', 'invoice_account'])
+    journal = fields.Many2One('account.journal', 'Journal', required=True,
+            domain=[('type', '=', 'cash')])
     date = fields.Date('Date', required=True)
 
     @staticmethod
@@ -2486,16 +2493,14 @@ class PayInvoiceAsk(ModelView):
         ('writeoff', 'Write-Off'),
         ('partial', 'Partial Payment'),
         ], 'Type', required=True)
-    writeoff = fields.Many2One(
-        'account.move.reconcile.write_off', "Write Off",
+    journal_writeoff = fields.Many2One('account.journal', 'Write-Off Journal',
         domain=[
-            ('company', '=', Eval('company')),
+            ('type', '=', 'write-off'),
             ],
         states={
             'invisible': Eval('type') != 'writeoff',
             'required': Eval('type') == 'writeoff',
-            },
-        depends=['company', 'type'])
+            }, depends=['type'])
     amount = fields.Numeric('Payment Amount',
             digits=(16, Eval('currency_digits', 2)),
             readonly=True, depends=['currency_digits'])
@@ -2586,7 +2591,6 @@ class PayInvoice(Wizard):
                     'create a partial payment with an amount greater than the '
                     'amount to pay.'),
                 })
-        cls.__rpc__['create'].fresh_session = True
 
     def get_reconcile_lines_for_amount(self, invoice, amount):
         if invoice.type == 'in':
@@ -2597,12 +2601,11 @@ class PayInvoice(Wizard):
         Invoice = Pool().get('account.invoice')
         default = {}
         invoice = Invoice(Transaction().context['active_id'])
-        default['company'] = invoice.company.id
         default['currency'] = invoice.currency.id
         default['currency_digits'] = invoice.currency.digits
         default['amount'] = (invoice.amount_to_pay_today
             or invoice.amount_to_pay)
-        default['invoice_account'] = invoice.account.id
+        default['description'] = invoice.number
         return default
 
     def transition_choice(self):
@@ -2678,8 +2681,6 @@ class PayInvoice(Wizard):
         with Transaction().set_context(date=self.start.date):
             amount = Currency.compute(self.start.currency,
                 self.start.amount, invoice.company.currency)
-            amount_invoice = Currency.compute(
-                self.start.currency, self.start.amount, invoice.currency)
 
         reconcile_lines, remainder = \
             self.get_reconcile_lines_for_amount(invoice, amount)
@@ -2690,7 +2691,7 @@ class PayInvoice(Wizard):
             amount_second_currency = self.start.amount
             second_currency = self.start.currency
 
-        if (amount_invoice > invoice.amount_to_pay
+        if (abs(amount) > abs(invoice.amount_to_pay)
                 and self.ask.type != 'writeoff'):
             self.raise_user_error('amount_greater_amount_to_pay',
                 (invoice.rec_name,))
@@ -2698,7 +2699,7 @@ class PayInvoice(Wizard):
         line = None
         if not invoice.company.currency.is_zero(amount):
             line = invoice.pay_invoice(amount,
-                self.start.payment_method, self.start.date,
+                self.start.journal, self.start.date,
                 self.start.description, amount_second_currency,
                 second_currency)
 
@@ -2713,7 +2714,7 @@ class PayInvoice(Wizard):
                     lines += [line]
                 if lines:
                     MoveLine.reconcile(lines,
-                        writeoff=self.ask.writeoff,
+                        journal=self.ask.journal_writeoff,
                         date=self.start.date)
         else:
             if line:

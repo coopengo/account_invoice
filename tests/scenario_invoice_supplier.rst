@@ -62,6 +62,16 @@ Create party::
     >>> party = Party(name='Party')
     >>> party.save()
 
+Create account category::
+
+    >>> ProductCategory = Model.get('product.category')
+    >>> account_category = ProductCategory(name="Account Category")
+    >>> account_category.accounting = True
+    >>> account_category.account_expense = expense
+    >>> account_category.account_revenue = revenue
+    >>> account_category.supplier_taxes.append(tax)
+    >>> account_category.save()
+
 Create product::
 
     >>> ProductUom = Model.get('product.uom')
@@ -72,9 +82,7 @@ Create product::
     >>> template.default_uom = unit
     >>> template.type = 'service'
     >>> template.list_price = Decimal('40')
-    >>> template.account_expense = expense
-    >>> template.account_revenue = revenue
-    >>> template.supplier_taxes.append(tax)
+    >>> template.account_category = account_category
     >>> template.save()
     >>> product, = template.products
 
@@ -113,23 +121,23 @@ Create invoice::
     Decimal('120.00')
     >>> invoice.save()
     >>> invoice.state
-    u'draft'
+    'draft'
     >>> bool(invoice.move)
     False
     >>> invoice.click('validate_invoice')
     >>> invoice.state
-    u'validated'
+    'validated'
     >>> bool(invoice.move)
     True
     >>> invoice.move.state
-    u'draft'
+    'draft'
     >>> invoice.click('post')
     >>> invoice.state
-    u'posted'
+    'posted'
     >>> bool(invoice.move)
     True
     >>> invoice.move.state
-    u'posted'
+    'posted'
     >>> invoice.untaxed_amount
     Decimal('110.00')
     >>> invoice.tax_amount
@@ -176,7 +184,7 @@ Credit invoice::
     >>> credit_note, = Invoice.find(
     ...     [('type', '=', 'in'), ('id', '!=', invoice.id)])
     >>> credit_note.state
-    u'draft'
+    'draft'
     >>> credit_note.untaxed_amount == -invoice.untaxed_amount
     True
     >>> credit_note.tax_amount == -invoice.tax_amount
@@ -202,7 +210,7 @@ Cancel draft invoice::
 
     >>> invoice_draft.click('cancel')
     >>> invoice_draft.state
-    u'cancel'
+    'cancel'
     >>> invoice_draft.move
     >>> invoice_draft.reconciled
 
@@ -210,7 +218,7 @@ Cancel posted invoice::
 
     >>> invoice.click('cancel')
     >>> invoice.state
-    u'cancel'
+    'cancel'
     >>> invoice.cancel_move is not None
     True
     >>> invoice.reconciled == today

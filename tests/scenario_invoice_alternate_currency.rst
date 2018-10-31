@@ -61,28 +61,48 @@ Create tax::
     >>> tax = create_tax(Decimal('.10'))
     >>> tax.save()
 
-Set Cash journal::
+Create payment method::
 
     >>> Journal = Model.get('account.journal')
-    >>> journal_cash, = Journal.find([('type', '=', 'cash')])
-    >>> journal_cash.credit_account = account_cash
-    >>> journal_cash.debit_account = account_cash
-    >>> journal_cash.save()
-
-Create Write-Off journal::
-
+    >>> PaymentMethod = Model.get('account.invoice.payment.method')
     >>> Sequence = Model.get('ir.sequence')
+    >>> journal_cash, = Journal.find([('type', '=', 'cash')])
+    >>> payment_method = PaymentMethod()
+    >>> payment_method.name = 'Cash'
+    >>> payment_method.journal = journal_cash
+    >>> payment_method.credit_account = account_cash
+    >>> payment_method.debit_account = account_cash
+    >>> payment_method.save()
+
+Create writeoff method::
+
+    >>> WriteOff = Model.get('account.move.reconcile.write_off')
     >>> sequence_journal, = Sequence.find([('code', '=', 'account.journal')])
     >>> journal_writeoff = Journal(name='Write-Off', type='write-off',
-    ...     sequence=sequence_journal,
-    ...     credit_account=revenue, debit_account=expense)
+    ...     sequence=sequence_journal)
     >>> journal_writeoff.save()
+    >>> writeoff = WriteOff()
+    >>> writeoff.name = 'Rate loss'
+    >>> writeoff.journal = journal_writeoff
+    >>> writeoff.credit_account = expense
+    >>> writeoff.debit_account = expense
+    >>> writeoff.save()
 
 Create party::
 
     >>> Party = Model.get('party.party')
     >>> party = Party(name='Party')
     >>> party.save()
+
+Create account category::
+
+    >>> ProductCategory = Model.get('product.category')
+    >>> account_category = ProductCategory(name="Account Category")
+    >>> account_category.accounting = True
+    >>> account_category.account_expense = expense
+    >>> account_category.account_revenue = revenue
+    >>> account_category.customer_taxes.append(tax)
+    >>> account_category.save()
 
 Create product::
 
@@ -94,9 +114,7 @@ Create product::
     >>> template.default_uom = unit
     >>> template.type = 'service'
     >>> template.list_price = Decimal('40')
-    >>> template.account_expense = expense
-    >>> template.account_revenue = revenue
-    >>> template.customer_taxes.append(tax)
+    >>> template.account_category = account_category
     >>> template.save()
     >>> product, = template.products
 
@@ -127,7 +145,7 @@ Create invoice with alternate currency::
     Decimal('460.00')
     >>> invoice.click('post')
     >>> invoice.state
-    u'posted'
+    'posted'
     >>> invoice.untaxed_amount
     Decimal('420.00')
     >>> invoice.tax_amount
@@ -140,11 +158,11 @@ Pay the invoice with rate change::
     >>> pay = Wizard('account.invoice.pay', [invoice])
     >>> pay.form.amount
     Decimal('460.00')
-    >>> pay.form.journal = journal_cash
+    >>> pay.form.payment_method = payment_method
     >>> pay.form.date = tomorrow
     >>> pay.execute('choice')
     >>> pay.form.type = 'writeoff'
-    >>> pay.form.journal_writeoff = journal_writeoff
+    >>> pay.form.writeoff = writeoff
     >>> pay.form.amount
     Decimal('460.00')
     >>> pay.form.currency == eur
@@ -155,7 +173,7 @@ Pay the invoice with rate change::
     True
     >>> pay.execute('pay')
     >>> invoice.state
-    u'paid'
+    'paid'
 
 Create negative tax::
 
@@ -183,7 +201,7 @@ Create invoice with alternate currency and negative taxes::
     Decimal('360.00')
     >>> invoice.click('post')
     >>> invoice.state
-    u'posted'
+    'posted'
     >>> invoice.untaxed_amount
     Decimal('400.00')
     >>> invoice.tax_amount

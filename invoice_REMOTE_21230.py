@@ -600,7 +600,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                     ).select(invoice.id,
                     Coalesce(Sum(
                             Case((line.second_currency == invoice.currency,
-                                line.amount_second_currency),
+                                    line.amount_second_currency),
                                 else_=line.debit - line.credit)),
                         0).cast(type_name),
                     where=(invoice.account == line.account) & red_sql,
@@ -2454,7 +2454,7 @@ class PayInvoiceStart(ModelView):
     invoice_account = fields.Many2One(
         'account.account', "Invoice Account", readonly=True)
     payment_method = fields.Many2One(
-        'account.invoice.payment.method', "Payment Method", required=True,
+        'account.invoice.payment.method', "Payment Method",  required=True,
         domain=[
             ('company', '=', Eval('company')),
             ('debit_account', '!=', Eval('invoice_account')),

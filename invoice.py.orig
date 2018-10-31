@@ -15,6 +15,7 @@ from trytond.report import Report
 from trytond.wizard import Wizard, StateView, StateTransition, StateAction, \
     Button
 from trytond import backend
+from trytond.server_context import ServerContext
 from trytond.pyson import If, Eval, Bool
 from trytond.tools import reduce_ids, grouped_slice
 from trytond.transaction import Transaction
@@ -600,7 +601,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                     ).select(invoice.id,
                     Coalesce(Sum(
                             Case((line.second_currency == invoice.currency,
-                                line.amount_second_currency),
+                                    line.amount_second_currency),
                                 else_=line.debit - line.credit)),
                         0).cast(type_name),
                     where=(invoice.account == line.account) & red_sql,
@@ -1013,12 +1014,16 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         pattern.setdefault('fiscalyear', fiscalyear.id)
         pattern.setdefault('period', period.id)
         invoice_type = self.type
-        if (all(l.amount < 0 for l in self.lines if l.product)
-                and self.total_amount < 0):
-            invoice_type += '_credit_note'
+        # JCA : Avoid forced read of invoice lines unless necessary
+        forced_type = ServerContext().get('forced_invoice_type', None)
+        if forced_type:
+            invoice_type += forced_type
         else:
-            invoice_type += '_invoice'
-
+            if (all(l.amount < 0 for l in self.lines if l.product)
+                    and self.total_amount < 0):
+                invoice_type += '_credit_note'
+            else:
+                invoice_type += '_invoice'
         for invoice_sequence in fiscalyear.invoice_sequences:
             if invoice_sequence.match(pattern):
                 sequence = getattr(
@@ -2053,7 +2058,7 @@ class InvoiceLine(sequence_ordered(), ModelSQL, ModelView, TaxableMixin):
         tax_lines = []
         if self.type != 'line':
             return tax_lines
-        taxes = self._get_taxes().values()
+        taxes = list(self._get_taxes().values())
         for tax in taxes:
             amount = tax['base']
             with Transaction().set_context(

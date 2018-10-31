@@ -325,7 +325,7 @@ class RenewFiscalYear(metaclass=PoolMeta):
                 })
 
         mapping = {}
-        for previous_id, new_sequence in zip(sequences.keys(), copies):
+        for previous_id, new_sequence in zip(list(sequences.keys()), copies):
             mapping[previous_id] = new_sequence.id
         to_write = []
         for new_sequence, old_sequence in zip(

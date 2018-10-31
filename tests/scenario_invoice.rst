@@ -62,28 +62,48 @@ Create tax::
     >>> credit_note_tax_code = create_tax_code(tax, 'tax', 'credit')
     >>> credit_note_tax_code.save()
 
-Set Cash journal::
+Create payment method::
 
     >>> Journal = Model.get('account.journal')
-    >>> journal_cash, = Journal.find([('type', '=', 'cash')])
-    >>> journal_cash.credit_account = account_cash
-    >>> journal_cash.debit_account = account_cash
-    >>> journal_cash.save()
-
-Create Write-Off journal::
-
+    >>> PaymentMethod = Model.get('account.invoice.payment.method')
     >>> Sequence = Model.get('ir.sequence')
+    >>> journal_cash, = Journal.find([('type', '=', 'cash')])
+    >>> payment_method = PaymentMethod()
+    >>> payment_method.name = 'Cash'
+    >>> payment_method.journal = journal_cash
+    >>> payment_method.credit_account = account_cash
+    >>> payment_method.debit_account = account_cash
+    >>> payment_method.save()
+
+Create Write Off method::
+
+    >>> WriteOff = Model.get('account.move.reconcile.write_off')
     >>> sequence_journal, = Sequence.find([('code', '=', 'account.journal')])
     >>> journal_writeoff = Journal(name='Write-Off', type='write-off',
-    ...     sequence=sequence_journal,
-    ...     credit_account=revenue, debit_account=expense)
+    ...     sequence=sequence_journal)
     >>> journal_writeoff.save()
+    >>> writeoff_method = WriteOff()
+    >>> writeoff_method.name = 'Rate loss'
+    >>> writeoff_method.journal = journal_writeoff
+    >>> writeoff_method.credit_account = expense
+    >>> writeoff_method.debit_account = expense
+    >>> writeoff_method.save()
 
 Create party::
 
     >>> Party = Model.get('party.party')
     >>> party = Party(name='Party')
     >>> party.save()
+
+Create account category::
+
+    >>> ProductCategory = Model.get('product.category')
+    >>> account_category = ProductCategory(name="Account Category")
+    >>> account_category.accounting = True
+    >>> account_category.account_expense = expense
+    >>> account_category.account_revenue = revenue
+    >>> account_category.customer_taxes.append(tax)
+    >>> account_category.save()
 
 Create product::
 
@@ -95,9 +115,7 @@ Create product::
     >>> template.default_uom = unit
     >>> template.type = 'service'
     >>> template.list_price = Decimal('40')
-    >>> template.account_expense = expense
-    >>> template.account_revenue = revenue
-    >>> template.customer_taxes.append(tax)
+    >>> template.account_category = account_category
     >>> template.save()
     >>> product, = template.products
 
@@ -150,9 +168,9 @@ Post invoice::
 
     >>> invoice.click('post')
     >>> invoice.state
-    u'posted'
+    'posted'
     >>> invoice.tax_identifier.code
-    u'BE0897290877'
+    'BE0897290877'
     >>> invoice.untaxed_amount
     Decimal('220.00')
     >>> invoice.tax_amount
@@ -198,7 +216,7 @@ Credit invoice with refund::
     >>> credit.execute('credit')
     >>> invoice.reload()
     >>> invoice.state
-    u'paid'
+    'paid'
     >>> invoice.reconciled == today
     True
     >>> receivable.reload()
@@ -242,7 +260,7 @@ Pay invoice::
     >>> pay.form.amount
     Decimal('240.00')
     >>> pay.form.amount = Decimal('120.00')
-    >>> pay.form.journal = journal_cash
+    >>> pay.form.payment_method = payment_method
     >>> pay.execute('choice')
     >>> pay.state
     'end'
@@ -251,7 +269,7 @@ Pay invoice::
     >>> pay.form.amount
     Decimal('120.00')
     >>> pay.form.amount = Decimal('20.00')
-    >>> pay.form.journal = journal_cash
+    >>> pay.form.payment_method = payment_method
     >>> pay.execute('choice')
     >>> pay.form.type = 'partial'
     >>> pay.form.amount
@@ -270,10 +288,10 @@ Pay invoice::
     >>> pay.form.amount
     Decimal('-20.00')
     >>> pay.form.amount = Decimal('99.00')
-    >>> pay.form.journal = journal_cash
+    >>> pay.form.payment_method = payment_method
     >>> pay.execute('choice')
     >>> pay.form.type = 'writeoff'
-    >>> pay.form.journal_writeoff = journal_writeoff
+    >>> pay.form.writeoff = writeoff_method
     >>> pay.form.amount
     Decimal('99.00')
     >>> len(pay.form.lines_to_pay)
@@ -287,7 +305,7 @@ Pay invoice::
     >>> pay.execute('pay')
 
     >>> invoice.state
-    u'paid'
+    'paid'
 
 Create empty invoice::
 
@@ -296,7 +314,7 @@ Create empty invoice::
     >>> invoice.payment_term = payment_term
     >>> invoice.click('post')
     >>> invoice.state
-    u'paid'
+    'paid'
 
 Create some complex invoice and test its taxes base rounding::
 
@@ -341,20 +359,20 @@ Create a paid invoice::
     >>> line.unit_price = Decimal('40')
     >>> invoice.click('post')
     >>> pay = Wizard('account.invoice.pay', [invoice])
-    >>> pay.form.journal = journal_cash
+    >>> pay.form.payment_method = payment_method
     >>> pay.execute('choice')
     >>> pay.state
     'end'
     >>> invoice.tax_identifier
     >>> invoice.state
-    u'paid'
+    'paid'
 
 The invoice is posted when the reconciliation is deleted::
 
     >>> invoice.payment_lines[0].reconciliation.delete()
     >>> invoice.reload()
     >>> invoice.state
-    u'posted'
+    'posted'
     >>> invoice.tax_identifier
 
 Credit invoice with non line lines::
