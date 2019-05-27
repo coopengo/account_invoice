@@ -216,7 +216,7 @@ Credit invoice with refund::
     >>> credit.execute('credit')
     >>> invoice.reload()
     >>> invoice.state
-    'paid'
+    'cancel'
     >>> invoice.reconciled == today
     True
     >>> receivable.reload()
@@ -306,6 +306,8 @@ Pay invoice::
 
     >>> invoice.state
     'paid'
+    >>> sorted(l.credit for l in invoice.reconciliation_lines)
+    [Decimal('1.00'), Decimal('20.00'), Decimal('99.00'), Decimal('120.00')]
 
 Create empty invoice::
 

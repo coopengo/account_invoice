@@ -220,6 +220,11 @@ class MoveLine(metaclass=PoolMeta):
         cls._check_modify_exclude.add('invoice_payment')
 
     @classmethod
+    def _get_origin(cls):
+        return super()._get_origin() + [
+            'account.invoice.line', 'account.invoice.tax']
+
+    @classmethod
     def get_invoice_payment(cls, lines, name):
         pool = Pool()
         InvoicePaymentLine = pool.get('account.invoice-account.move.line')
@@ -245,6 +250,16 @@ class MoveLine(metaclass=PoolMeta):
     def search_invoice_payment(cls, name, domain):
         return [('invoice_payments',) + tuple(domain[1:])]
 
+    @property
+    def product(self):
+        pool = Pool()
+        InvoiceLine = pool.get('account.invoice.line')
+        product = super().product
+        if (isinstance(self.origin, InvoiceLine)
+                and self.origin.product):
+            product = self.origin.product
+        return product
+
 
 class Reconciliation(metaclass=PoolMeta):
     __name__ = 'account.move.reconciliation'
@@ -253,16 +268,24 @@ class Reconciliation(metaclass=PoolMeta):
     def create(cls, vlist):
         Invoice = Pool().get('account.invoice')
         reconciliations = super(Reconciliation, cls).create(vlist)
-        move_ids = set()
-        account_ids = set()
-        for reconciliation in reconciliations:
-            move_ids |= {l.move.id for l in reconciliation.lines}
-            account_ids |= {l.account.id for l in reconciliation.lines}
-        invoices = Invoice.search([
-                ('move', 'in', list(move_ids)),
-                ('account', 'in', list(account_ids)),
-                ])
-        Invoice.process(invoices)
+
+        def process(reconciliations):
+            move_ids = set()
+            others = set()
+            for reconciliation in reconciliations:
+                for line in reconciliation.lines:
+                    move_ids.add(line.move.id)
+                    others.update(line.reconciliations_delegated)
+            if others:
+                move_ids.update(process(cls.browse(others)))
+            return move_ids
+        move_ids = process(reconciliations)
+        invoices = set()
+        for sub_ids in grouped_slice(move_ids):
+            invoices.update(Invoice.search([
+                        ('move', 'in', list(sub_ids)),
+                        ]))
+        Invoice.process(Invoice.browse(invoices))
         return reconciliations
 
     @classmethod

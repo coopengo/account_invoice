@@ -3,8 +3,9 @@
 from decimal import Decimal
 from dateutil.relativedelta import relativedelta
 
-from sql import Column
+from sql import Column, Null
 
+from trytond.i18n import gettext
 from trytond.model import (
     ModelView, ModelSQL, DeactivableMixin, fields, sequence_ordered)
 from trytond import backend
@@ -13,6 +14,8 @@ from trytond.transaction import Transaction
 from trytond.pool import Pool
 from trytond.wizard import Wizard, StateView, Button
 from trytond.config import config
+
+from .exceptions import PaymentTermValidationError, PaymentTermComputeError
 
 __all__ = ['PaymentTerm', 'PaymentTermLine', 'PaymentTermLineRelativeDelta',
     'TestPaymentTerm', 'TestPaymentTermView', 'TestPaymentTermViewResult']
@@ -30,14 +33,6 @@ class PaymentTerm(DeactivableMixin, ModelSQL, ModelView):
     def __setup__(cls):
         super(PaymentTerm, cls).__setup__()
         cls._order.insert(0, ('name', 'ASC'))
-        cls._error_messages.update({
-                'invalid_line': ('Invalid line "%(line)s" in payment term '
-                    '"%(term)s".'),
-                'missing_remainder': ('Missing remainder line in payment term '
-                    '"%s".'),
-                'last_remainder': ('Last line of payment term "%s" must be of '
-                    'type remainder.'),
-                })
 
     @classmethod
     def validate(cls, terms):
@@ -47,7 +42,10 @@ class PaymentTerm(DeactivableMixin, ModelSQL, ModelView):
 
     def check_remainder(self):
         if not self.lines or not self.lines[-1].type == 'remainder':
-            self.raise_user_error('last_remainder', self.rec_name)
+            raise PaymentTermValidationError(
+                gettext('account_invoive'
+                    '.msg_payment_term_missing_last_remainder',
+                    payment_term=self.rec_name))
 
     def compute(self, amount, currency, date=None):
         """Calculate payment terms and return a list of tuples
@@ -70,12 +68,6 @@ class PaymentTerm(DeactivableMixin, ModelSQL, ModelView):
             value = line.get_value(remainder, amount, currency)
             value_date = line.get_date(date)
             if value is None or not value_date:
-                if (not remainder) and line.amount:
-                    self.raise_user_error('invalid_line', {
-                            'line': line.rec_name,
-                            'term': self.rec_name,
-                            })
-                else:
                     continue
             if ((remainder - value) * sign) < Decimal('0.0'):
                 res.append((value_date, remainder))
@@ -89,7 +81,9 @@ class PaymentTerm(DeactivableMixin, ModelSQL, ModelView):
                 res.append((date, Decimal(0)))
 
         if not currency.is_zero(remainder):
-            self.raise_user_error('missing_remainder', (self.rec_name,))
+            raise PaymentTermComputeError(
+                gettext('account_invoice.msg_payment_term_missing_remainder',
+                    payment_term=self.rec_name))
         return res
 
 
@@ -128,15 +122,6 @@ class PaymentTermLine(sequence_ordered(), ModelSQL, ModelView):
         'on_change_with_currency_digits')
     relativedeltas = fields.One2Many(
         'account.invoice.payment_term.line.delta', 'line', 'Deltas')
-
-    @classmethod
-    def __setup__(cls):
-        super(PaymentTermLine, cls).__setup__()
-        cls._error_messages.update({
-                'invalid_ratio_and_divisor': ('Ratio and '
-                    'Divisor values are not consistent in line "%(line)s" '
-                    'of payment term "%(term)s".'),
-                })
 
     @classmethod
     def __register__(cls, module_name):
@@ -197,16 +182,6 @@ class PaymentTermLine(sequence_ordered(), ModelSQL, ModelView):
             return self.currency.digits
         return 2
 
-    def get_delta(self):
-        return {
-            'day': self.day,
-            'month': int(self.month) if self.month else None,
-            'days': self.days,
-            'weeks': self.weeks,
-            'months': self.months,
-            'weekday': int(self.weekday) if self.weekday else None,
-            }
-
     def get_date(self, date):
         for relativedelta_ in self.relativedeltas:
             date += relativedelta_.get()
@@ -243,19 +218,19 @@ class PaymentTermLine(sequence_ordered(), ModelSQL, ModelView):
             if line.type not in ('percent', 'percent_on_total'):
                 continue
             if line.ratio is None or line.divisor is None:
-                cls.raise_user_error('invalid_ratio_and_divisor', {
-                        'line': line.rec_name,
-                        'term': line.payment.rec_name,
-                        })
+                raise PaymentTermValidationError(
+                    gettext('account_invoice'
+                        '.msg_payment_term_invalid_ratio_divisor',
+                        line=line.rec_name))
             ratio = line.ratio
             divisor = line.divisor
             line.on_change_ratio()
             line.on_change_divisor()
             if (line.divisor != divisor) or (line.ratio != ratio):
-                cls.raise_user_error('invalid_ratio_and_divisor', {
-                        'line': line.rec_name,
-                        'term': line.payment.rec_name,
-                        })
+                raise PaymentTermValidationError(
+                    gettext('account_invoice'
+                        '.msg_payment_term_invalid_ratio_divisor',
+                        line=line.rec_name))
 
 
 class PaymentTermLineRelativeDelta(sequence_ordered(), ModelSQL, ModelView):
@@ -268,31 +243,8 @@ class PaymentTermLineRelativeDelta(sequence_ordered(), ModelSQL, ModelView):
             ('day', '=', None),
             [('day', '>=', 1), ('day', '<=', 31)],
             ])
-    month = fields.Selection([
-            (None, ''),
-            ('1', 'January'),
-            ('2', 'February'),
-            ('3', 'March'),
-            ('4', 'April'),
-            ('5', 'May'),
-            ('6', 'June'),
-            ('7', 'July'),
-            ('8', 'August'),
-            ('9', 'September'),
-            ('10', 'October'),
-            ('11', 'November'),
-            ('12', 'December'),
-            ], 'Month', sort=False)
-    weekday = fields.Selection([
-            (None, ''),
-            ('0', 'Monday'),
-            ('1', 'Tuesday'),
-            ('2', 'Wednesday'),
-            ('3', 'Thursday'),
-            ('4', 'Friday'),
-            ('5', 'Saturday'),
-            ('6', 'Sunday'),
-            ], 'Day of Week', sort=False)
+    month = fields.Many2One('ir.calendar.month', "Month")
+    weekday = fields.Many2One('ir.calendar.day', "Day of Week")
     months = fields.Integer('Number of Months', required=True)
     weeks = fields.Integer('Number of Weeks', required=True)
     days = fields.Integer('Number of Days', required=True)
@@ -300,11 +252,16 @@ class PaymentTermLineRelativeDelta(sequence_ordered(), ModelSQL, ModelView):
     @classmethod
     def __register__(cls, module_name):
         TableHandler = backend.get('TableHandler')
-        cursor = Transaction().connection.cursor()
+        transaction = Transaction()
+        cursor = transaction.connection.cursor()
         pool = Pool()
         Line = pool.get('account.invoice.payment_term.line')
+        Month = pool.get('ir.calendar.month')
+        Day = pool.get('ir.calendar.day')
         sql_table = cls.__table__()
         line = Line.__table__()
+        month = Month.__table__()
+        day = Day.__table__()
 
         # Migration from 4.0: rename long table
         old_model_name = 'account.invoice.payment_term.line.relativedelta'
@@ -313,8 +270,29 @@ class PaymentTermLineRelativeDelta(sequence_ordered(), ModelSQL, ModelView):
         if TableHandler.table_exist(old_table):
             TableHandler.table_rename(old_table, cls._table)
 
+        # Migration from 5.0: use ir.calendar
+        migrate_calendar = False
+        if TableHandler.table_exist(cls._table):
+            cursor.execute(*sql_table.select(
+                    sql_table.month, sql_table.weekday,
+                    where=(sql_table.month != Null)
+                    | (sql_table.weekday != Null),
+                    limit=1))
+            try:
+                row, = cursor.fetchall()
+                migrate_calendar = any(isinstance(v, str) for v in row)
+            except ValueError:
+                # As we cannot know the column type
+                # we migrate any way as no data need to be migrated
+                migrate_calendar = True
+            if migrate_calendar:
+                table_h = cls.__table_handler__(module_name)
+                table_h.column_rename('month', '_temp_month')
+                table_h.column_rename('weekday', '_temp_weekday')
+
         super(PaymentTermLineRelativeDelta, cls).__register__(module_name)
 
+        table_h = cls.__table_handler__(module_name)
         line_table = Line.__table_handler__(module_name)
 
         # Migration from 3.4
@@ -328,6 +306,22 @@ class PaymentTermLineRelativeDelta(sequence_ordered(), ModelSQL, ModelView):
                     values=line.select(*columns)))
             for field in fields:
                 line_table.drop_column(field)
+
+        # Migration from 5.0: use ir.calendar
+        if migrate_calendar:
+            update = transaction.connection.cursor()
+            cursor.execute(*month.select(month.id, month.index))
+            for month_id, index in cursor:
+                update.execute(*sql_table.update(
+                        [sql_table.month], [month_id],
+                        where=sql_table._temp_month == str(index)))
+            table_h.drop_column('_temp_month')
+            cursor.execute(*day.select(day.id, day.index))
+            for day_id, index in cursor:
+                update.execute(*sql_table.update(
+                        [sql_table.weekday], [day_id],
+                        where=sql_table._temp_weekday == str(index)))
+            table_h.drop_column('_temp_weekday')
 
     @staticmethod
     def default_months():
@@ -345,11 +339,11 @@ class PaymentTermLineRelativeDelta(sequence_ordered(), ModelSQL, ModelView):
         "Return the relativedelta"
         return relativedelta(
             day=self.day,
-            month=int(self.month) if self.month else None,
+            month=int(self.month.index) if self.month else None,
             days=self.days,
             weeks=self.weeks,
             months=self.months,
-            weekday=int(self.weekday) if self.weekday else None,
+            weekday=int(self.weekday.index) if self.weekday else None,
             )
 
 
