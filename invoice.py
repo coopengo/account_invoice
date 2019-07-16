@@ -1449,7 +1449,11 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
             to_reconcile = []
             for line in invoice.move.lines + invoice.cancel_move.lines:
                 if line.account == invoice.account:
-                    to_reconcile.append(line)
+                    # JMO : handle case of zero lines
+                    # on cancel move
+                    zero_reconciled = not line.amount and line.reconciliation
+                    if not zero_reconciled:
+                        to_reconcile.append(line)
             Line.reconcile(to_reconcile)
 
         cls._clean_payments(invoices)
