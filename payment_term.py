@@ -17,9 +17,6 @@ from trytond.config import config
 
 from .exceptions import PaymentTermValidationError, PaymentTermComputeError
 
-__all__ = ['PaymentTerm', 'PaymentTermLine', 'PaymentTermLineRelativeDelta',
-    'TestPaymentTerm', 'TestPaymentTermView', 'TestPaymentTermViewResult']
-
 
 class PaymentTerm(DeactivableMixin, ModelSQL, ModelView):
     'Payment Term'
@@ -68,7 +65,7 @@ class PaymentTerm(DeactivableMixin, ModelSQL, ModelView):
             value = line.get_value(remainder, amount, currency)
             value_date = line.get_date(date)
             if value is None or not value_date:
-                    continue
+                continue
             if ((remainder - value) * sign) < Decimal('0.0'):
                 res.append((value_date, remainder))
                 break
@@ -250,7 +247,6 @@ class PaymentTermLineRelativeDelta(sequence_ordered(), ModelSQL, ModelView):
 
     @classmethod
     def __register__(cls, module_name):
-        TableHandler = backend.get('TableHandler')
         transaction = Transaction()
         cursor = transaction.connection.cursor()
         pool = Pool()
@@ -266,12 +262,12 @@ class PaymentTermLineRelativeDelta(sequence_ordered(), ModelSQL, ModelView):
         old_model_name = 'account.invoice.payment_term.line.relativedelta'
         old_table = config.get(
             'table', old_model_name, default=old_model_name.replace('.', '_'))
-        if TableHandler.table_exist(old_table):
-            TableHandler.table_rename(old_table, cls._table)
+        if backend.TableHandler.table_exist(old_table):
+            backend.TableHandler.table_rename(old_table, cls._table)
 
         # Migration from 5.0: use ir.calendar
         migrate_calendar = False
-        if TableHandler.table_exist(cls._table):
+        if backend.TableHandler.table_exist(cls._table):
             cursor.execute(*sql_table.select(
                     sql_table.month, sql_table.weekday,
                     where=(sql_table.month != Null)
