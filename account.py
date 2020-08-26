@@ -12,10 +12,6 @@ from trytond.pool import Pool, PoolMeta
 from trytond.tools import grouped_slice
 from trytond.transaction import Transaction
 
-__all__ = ['FiscalYear',
-    'Period', 'Move', 'MoveLine', 'Reconciliation', 'InvoiceSequence',
-    'RenewFiscalYear']
-
 
 class FiscalYear(metaclass=PoolMeta):
     __name__ = 'account.fiscalyear'
@@ -345,6 +341,9 @@ class RenewFiscalYear(metaclass=PoolMeta):
                 sequences[sequence.id] = sequence
         copies = Sequence.copy(list(sequences.values()), default={
                 'next_number': 1,
+                'name': lambda data: data['name'].replace(
+                    self.start.previous_fiscalyear.name,
+                    self.start.name)
                 })
 
         mapping = {}
