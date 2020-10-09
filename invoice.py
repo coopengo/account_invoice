@@ -514,8 +514,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
             if tax.manual:
                 self.tax_amount += tax.amount or Decimal('0.0')
                 continue
-            tax_id = tax.tax.id if tax.tax else None
-            key = (tax.account.id, tax_id)
+            key = tax._key
             if (key not in computed_taxes) or (key in tax_keys):
                 taxes.remove(tax)
                 continue
@@ -855,8 +854,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                 for tax in invoice.taxes:
                     if tax.manual:
                         continue
-                    tax_id = tax.tax.id if tax.tax else None
-                    key = (tax.account.id, tax_id)
+                    key = tax._key
                     if (key not in computed_taxes) or (key in tax_keys):
                         if exception:
                             cls.raise_user_error('missing_tax_line',
@@ -1844,8 +1842,7 @@ class InvoiceLine(sequence_ordered(), ModelSQL, ModelView, TaxableMixin):
         for tax in self.invoice.taxes:
             if tax.manual:
                 continue
-            tax_id = tax.tax.id if tax.tax else None
-            key = (tax.account.id, tax_id)
+            key = tax._key
             if key in taxes_keys:
                 taxes.append(tax.id)
         return taxes
@@ -2256,6 +2253,15 @@ class InvoiceTax(sequence_ordered(), ModelSQL, ModelView):
                         amount = self.invoice.currency.round(amount)
                     return amount
         return self.amount
+
+    @property
+    def _key(self):
+        # JMO : backport fix for https://bugs.tryton.org/issue8759
+        # To be able to fix https://support.coopengo.com/issues/11322
+
+        # Same as _TaxKey
+        tax_id = self.tax.id if self.tax else -1
+        return (self.account.id, tax_id, self.base >= 0)
 
     @classmethod
     def check_modify(cls, taxes):
