@@ -273,15 +273,14 @@ class PaymentTermLineRelativeDelta(sequence_ordered(), ModelSQL, ModelView):
                     where=(sql_table.month != Null)
                     | (sql_table.weekday != Null),
                     limit=1))
-            try:
-                row, = cursor.fetchall()
-                migrate_calendar = any(isinstance(v, str) for v in row)
-            except ValueError:
-                # As we cannot know the column type
-                # we migrate any way as no data need to be migrated
-                migrate_calendar = True
+            table_h = cls.__table_handler__(module_name)
+            if cursor.rowcount:
+                # Drop the column only if they are not of the right type
+                char_type = fields.Char._sql_type
+                migrate_calendar = (
+                    (table_h.column_type('month') == char_type)
+                    or (table_h.column_type('weekday') == char_type))
             if migrate_calendar:
-                table_h = cls.__table_handler__(module_name)
                 table_h.column_rename('month', '_temp_month')
                 table_h.column_rename('weekday', '_temp_weekday')
 
@@ -291,15 +290,15 @@ class PaymentTermLineRelativeDelta(sequence_ordered(), ModelSQL, ModelView):
         line_table = Line.__table_handler__(module_name)
 
         # Migration from 3.4
-        fields = ['day', 'month', 'weekday', 'months', 'weeks', 'days']
-        if any(line_table.column_exist(f) for f in fields):
+        line_fields = ['day', 'month', 'weekday', 'months', 'weeks', 'days']
+        if any(line_table.column_exist(f) for f in line_fields):
             columns = ([line.id.as_('line')]
-                + [Column(line, f) for f in fields])
+                + [Column(line, f) for f in line_fields])
             cursor.execute(*sql_table.insert(
                     columns=[sql_table.line]
-                    + [Column(sql_table, f) for f in fields],
+                    + [Column(sql_table, f) for f in line_fields],
                     values=line.select(*columns)))
-            for field in fields:
+            for field in line_fields:
                 line_table.drop_column(field)
 
         # Migration from 5.0: use ir.calendar
