@@ -917,6 +917,9 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         line.description = self.description
         return line
 
+    def get_payment_term_computation_date(self):
+        return self.invoice_date
+
     def get_move(self):
         '''
         Compute account move for the invoice and return the created move
@@ -945,7 +948,8 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         term_lines = [(Date.today(), total)]
         if self.payment_term:
             term_lines = self.payment_term.compute(
-                total, self.company.currency, self.invoice_date)
+                total, self.company.currency,
+                self.get_payment_term_computation_date())
         remainder_total_currency = total_currency
         for date, amount in term_lines:
             line = self._get_move_line(date, amount)
