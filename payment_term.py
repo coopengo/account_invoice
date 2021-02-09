@@ -41,7 +41,8 @@ class PaymentTerm(DeactivableMixin, ModelSQL, ModelView):
         """
         # TODO implement business_days
         # http://pypi.python.org/pypi/BusinessHours/
-        Date = Pool().get('ir.date')
+        pool = Pool()
+        Date = pool.get('ir.date')
 
         sign = 1 if amount >= Decimal('0.0') else -1
         res = []
@@ -65,9 +66,7 @@ class PaymentTerm(DeactivableMixin, ModelSQL, ModelView):
                 res.append((date, Decimal(0)))
 
         if not currency.is_zero(remainder):
-            raise PaymentTermComputeError(
-                gettext('account_invoice.msg_payment_term_missing_remainder',
-                    payment_term=self.rec_name))
+            res.append((date, remainder))
         return res
 
 
