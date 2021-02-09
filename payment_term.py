@@ -41,8 +41,7 @@ class PaymentTerm(DeactivableMixin, ModelSQL, ModelView):
         """
         # TODO implement business_days
         # http://pypi.python.org/pypi/BusinessHours/
-        pool = Pool()
-        Date = pool.get('ir.date')
+        Date = Pool().get('ir.date')
 
         sign = 1 if amount >= Decimal('0.0') else -1
         res = []
