@@ -88,7 +88,7 @@ class AccountInvoiceTestCase(ModuleTestCase):
                 (datetime.date(2011, 10, 31), Decimal('396.84')),
                 (datetime.date(2011, 11, 1), Decimal('396.84')),
                 (datetime.date(2011, 12, 1), Decimal('396.84')),
-                (datetime.date(2012, 1, 14), Decimal('396.83')),
+                (datetime.date(2011, 10, 1), Decimal('396.83')),
                 ])
 
         # Test with remainder line:
