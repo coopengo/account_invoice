@@ -292,7 +292,17 @@ class Reconciliation(metaclass=PoolMeta):
     def delete(cls, reconciliations):
         Invoice = Pool().get('account.invoice')
 
-        move_ids = set(l.move.id for r in reconciliations for l in r.lines)
+        def process(reconciliations):
+            move_ids = set()
+            others = set()
+            for reconciliation in reconciliations:
+                for line in reconciliation.lines:
+                    move_ids.add(line.move.id)
+                    others.update(line.reconciliations_delegated)
+            if others:
+                move_ids.update(process(cls.browse(others)))
+            return move_ids
+        move_ids = process(reconciliations)
         invoices = Invoice.search([
                 ('move', 'in', list(move_ids)),
                 ])
