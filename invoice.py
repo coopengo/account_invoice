@@ -708,7 +708,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                         invoice.company.currency, amount, invoice.currency)
             if invoice.type == 'in' and amount_currency:
                 amount_currency *= -1
-            res[invoice.id] = amount_currency
+            res[invoice.id] = invoice.currency.round(amount_currency)
         return res
 
     @classmethod
