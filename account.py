@@ -1,5 +1,6 @@
 # This file is part of Tryton.  The COPYRIGHT file at the top level of
 # this repository contains the full copyright notices and license terms.
+from decimal import Decimal
 from collections import OrderedDict
 
 from sql import Literal
@@ -209,6 +210,9 @@ class MoveLine(metaclass=PoolMeta):
     invoice_payments = fields.Many2Many(
         'account.invoice-account.move.line', 'line', 'invoice',
         "Invoice Payments", readonly=True)
+    delegated_amount = fields.Function(
+        fields.Numeric("Delegated Amount to Pay"),
+        'get_delegated_amount')
 
     @classmethod
     def __setup__(cls):
@@ -245,6 +249,18 @@ class MoveLine(metaclass=PoolMeta):
     @classmethod
     def search_invoice_payment(cls, name, domain):
         return [('invoice_payments',) + tuple(domain[1:])]
+
+    def get_delegated_amount(self, name):
+        def final_delegated_line(line):
+            if not line.reconciliation or not line.reconciliation.delegate_to:
+                return line
+            return final_delegated_line(line.reconciliation.delegate_to)
+
+        final_delegation = final_delegated_line(self)
+        if final_delegation.reconciliation:
+            return final_delegation.amount_currency.round(0)
+        else:
+            return final_delegation.amount
 
     @property
     def product(self):
