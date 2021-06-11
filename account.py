@@ -1,5 +1,6 @@
 # This file is part of Tryton.  The COPYRIGHT file at the top level of
 # this repository contains the full copyright notices and license terms.
+import itertools
 from decimal import Decimal
 from collections import OrderedDict
 
@@ -187,6 +188,27 @@ class Move(metaclass=PoolMeta):
     def _get_origin(cls):
         return super(Move, cls)._get_origin() + ['account.invoice']
 
+    def _cancel_default(self):
+        defaults = super()._cancel_default()
+        defaults['lines.invoice_payments'] = lambda data: None
+        return defaults
+
+    def cancel(self, default=None):
+        pool = Pool()
+        MoveLine = pool.get('account.move.line')
+
+        cancel_move = super().cancel(default)
+        to_remove = {}
+        for line in self.lines:
+            if line.invoice_payments:
+                to_remove[line] = [pl.id for pl in line.invoice_payments]
+        if to_remove:
+            MoveLine.write(*itertools.chain.from_iterable(
+                    ([line], {'invoice_payments': [('remove', invoice_ids)]})
+                    for line, invoice_ids in to_remove.items()))
+
+        return cancel_move
+
 
 class MoveLine(metaclass=PoolMeta):
     __name__ = 'account.move.line'
@@ -217,7 +239,8 @@ class MoveLine(metaclass=PoolMeta):
     @classmethod
     def __setup__(cls):
         super(MoveLine, cls).__setup__()
-        cls._check_modify_exclude.add('invoice_payment')
+        cls._check_modify_exclude.update(
+            {'invoice_payment', 'invoice_payments'})
 
     @classmethod
     def _get_origin(cls):
