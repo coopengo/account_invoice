@@ -378,17 +378,6 @@ The invoice is posted when the reconciliation is deleted::
     'posted'
     >>> invoice.tax_identifier
 
-Cancelling the payment move remove the link to the invoice::
-
-    >>> len(invoice.payment_lines)
-    1
-    >>> paying_move = invoice.payment_lines[0].move
-    >>> cancel_move = Wizard('account.move.cancel', [paying_move])
-    >>> cancel_move.execute('cancel')
-    >>> invoice.reload()
-    >>> len(invoice.payment_lines)
-    0
-
 Credit invoice with non line lines::
 
     >>> invoice = Invoice()
