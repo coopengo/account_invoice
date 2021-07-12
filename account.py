@@ -6,12 +6,39 @@ from collections import OrderedDict
 from sql import Literal
 from sql.conditionals import Coalesce
 
-from trytond.model import (fields, ModelView, ModelSQL, MatchMixin,
+from trytond.i18n import gettext
+from trytond.model import (fields, ModelView, ModelSQL, Workflow, MatchMixin,
     sequence_ordered)
-from trytond.pyson import Eval, If, Bool
+from trytond.pyson import Eval, If, Bool, Id
 from trytond.pool import Pool, PoolMeta
 from trytond.tools import grouped_slice
 from trytond.transaction import Transaction
+
+from trytond.modules.account.exceptions import ClosePeriodError
+from trytond.modules.company.model import CompanyValueMixin
+
+
+class Configuration(metaclass=PoolMeta):
+    __name__ = 'account.configuration'
+
+    default_customer_payment_term = fields.MultiValue(
+        fields.Many2One(
+            'account.invoice.payment_term', "Default Customer Payment Term"))
+
+    @classmethod
+    def multivalue_model(cls, field):
+        pool = Pool()
+        if field in 'default_customer_payment_term':
+            return pool.get('account.configuration.default_payment_term')
+        return super().multivalue_model(field)
+
+
+class ConfigurationDefaultPaymentTerm(ModelSQL, CompanyValueMixin):
+    "Account Configuration Default Payment Term"
+    __name__ = 'account.configuration.default_payment_term'
+
+    default_customer_payment_term = fields.Many2One(
+        'account.invoice.payment_term', "Default Customer Payment Term")
 
 
 class FiscalYear(metaclass=PoolMeta):
@@ -112,6 +139,27 @@ class Period(metaclass=PoolMeta):
             table.drop_column('in_invoice_sequence')
             table.drop_column('in_credit_note_sequence')
 
+    @classmethod
+    @ModelView.button
+    @Workflow.transition('close')
+    def close(cls, periods):
+        pool = Pool()
+        Invoice = pool.get('account.invoice')
+        company_ids = list({p.company.id for p in periods})
+        invoices = Invoice.search([
+                ('company', 'in', company_ids),
+                ('state', '=', 'posted'),
+                ('move', '=', None),
+                ])
+        if invoices:
+            names = ', '.join(i.rec_name for i in invoices[:5])
+            if len(invoices) > 5:
+                names += '...'
+            raise ClosePeriodError(
+                gettext('account_invoice.msg_close_period_non_posted_invoices',
+                    invoices=names))
+        super().close(periods)
+
 
 class InvoiceSequence(sequence_ordered(), ModelSQL, ModelView, MatchMixin):
     'Invoice Sequence'
@@ -132,41 +180,33 @@ class InvoiceSequence(sequence_ordered(), ModelSQL, ModelView, MatchMixin):
     in_invoice_sequence = fields.Many2One('ir.sequence.strict',
         'Supplier Invoice Sequence', required=True,
         domain=[
-            ('code', '=', 'account.invoice'),
-            ['OR',
-                ('company', '=', Eval('company')),
-                ('company', '=', None),
-                ],
+            ('sequence_type', '=',
+                Id('account_invoice', 'sequence_type_account_invoice')),
+            ('company', '=', Eval('company')),
             ],
         depends=['company'])
     in_credit_note_sequence = fields.Many2One('ir.sequence.strict',
         'Supplier Credit Note Sequence', required=True,
         domain=[
-            ('code', '=', 'account.invoice'),
-            ['OR',
-                ('company', '=', Eval('company')),
-                ('company', '=', None),
-                ],
+            ('sequence_type', '=',
+                Id('account_invoice', 'sequence_type_account_invoice')),
+            ('company', '=', Eval('company')),
             ],
         depends=['company'])
     out_invoice_sequence = fields.Many2One('ir.sequence.strict',
         'Customer Invoice Sequence', required=True,
         domain=[
-            ('code', '=', 'account.invoice'),
-            ['OR',
-                ('company', '=', Eval('company')),
-                ('company', '=', None),
-                ],
+            ('sequence_type', '=',
+                Id('account_invoice', 'sequence_type_account_invoice')),
+            ('company', '=', Eval('company')),
             ],
         depends=['company'])
     out_credit_note_sequence = fields.Many2One('ir.sequence.strict',
         'Customer Credit Note Sequence', required=True,
         domain=[
-            ('code', '=', 'account.invoice'),
-            ['OR',
-                ('company', '=', Eval('company')),
-                ('company', '=', None),
-                ],
+            ('sequence_type', '=',
+                Id('account_invoice', 'sequence_type_account_invoice')),
+            ('company', '=', Eval('company')),
             ],
         depends=['company'])
 
@@ -310,7 +350,7 @@ class Reconciliation(metaclass=PoolMeta):
     def create(cls, vlist):
         Invoice = Pool().get('account.invoice')
         reconciliations = super(Reconciliation, cls).create(vlist)
-        Invoice.process(list(_invoices_to_process(reconciliations)))
+        Invoice.__queue__.process(list(_invoices_to_process(reconciliations)))
         return reconciliations
 
     @classmethod
@@ -319,7 +359,7 @@ class Reconciliation(metaclass=PoolMeta):
 
         invoices_to_process = _invoices_to_process(reconciliations)
         super(Reconciliation, cls).delete(reconciliations)
-        Invoice.process(list(invoices_to_process))
+        Invoice.__queue__.process(list(invoices_to_process))
 
 
 class RenewFiscalYear(metaclass=PoolMeta):

@@ -3,7 +3,7 @@
 from decimal import Decimal
 from dateutil.relativedelta import relativedelta
 
-from sql import Column, Null
+from sql import Column
 
 from trytond.i18n import gettext
 from trytond.model import (
@@ -104,6 +104,11 @@ class PaymentTermLine(sequence_ordered(), ModelSQL, ModelView):
         'on_change_with_currency_digits')
     relativedeltas = fields.One2Many(
         'account.invoice.payment_term.line.delta', 'line', 'Deltas')
+
+    @classmethod
+    def __setup__(cls):
+        super().__setup__()
+        cls.__access__.add('payment')
 
     @classmethod
     def __register__(cls, module_name):
@@ -231,6 +236,11 @@ class PaymentTermLineRelativeDelta(sequence_ordered(), ModelSQL, ModelView):
     days = fields.Integer('Number of Days', required=True)
 
     @classmethod
+    def __setup__(cls):
+        super().__setup__()
+        cls.__access__.add('line')
+
+    @classmethod
     def __register__(cls, module_name):
         transaction = Transaction()
         cursor = transaction.connection.cursor()
@@ -260,7 +270,6 @@ class PaymentTermLineRelativeDelta(sequence_ordered(), ModelSQL, ModelView):
                 table_h.column_is_type('month', 'VARCHAR')
                 or table_h.column_is_type('weekday', 'VARCHAR'))
             if migrate_calendar:
-                table_h = cls.__table_handler__(module_name)
                 table_h.column_rename('month', '_temp_month')
                 table_h.column_rename('weekday', '_temp_weekday')
 
@@ -330,10 +339,10 @@ class TestPaymentTerm(Wizard):
         [Button('Close', 'end', 'tryton-close', default=True)])
 
     def default_test(self, fields):
-        context = Transaction().context
         default = {}
-        if context['active_model'] == 'account.invoice.payment_term':
-            default['payment_term'] = context['active_id']
+        if (self.model
+                and self.model.__name__ == 'account.invoice.payment_term'):
+            default['payment_term'] = self.record.id if self.record else None
         return default
 
 
@@ -373,7 +382,9 @@ class TestPaymentTermView(ModelView):
             for date, amount in self.payment_term.compute(
                     self.amount, self.currency, self.date):
                 result.append(Result(
-                        date=date, amount=amount,
+                        date=date,
+                        amount=amount,
+                        currency=self.currency,
                         currency_digits=self.currency.digits))
         self.result = result
         return self._changed_values.get('result', [])
@@ -385,4 +396,5 @@ class TestPaymentTermViewResult(ModelView):
     date = fields.Date('Date', readonly=True)
     amount = fields.Numeric('Amount', readonly=True,
         digits=(16, Eval('currency_digits', 2)), depends=['currency_digits'])
+    currency = fields.Many2One('currency.currency', "Currency")
     currency_digits = fields.Integer('Currency Digits')

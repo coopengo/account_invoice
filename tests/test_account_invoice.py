@@ -10,16 +10,23 @@ from trytond.tests.test_tryton import doctest_teardown
 from trytond.tests.test_tryton import doctest_checker
 from trytond.pool import Pool
 
-from ..exceptions import PaymentTermValidationError
+from trytond.modules.company.tests import (
+    PartyCompanyCheckEraseMixin, CompanyTestMixin)
 from trytond.modules.currency.tests import create_currency
+
+from ..exceptions import PaymentTermValidationError
 
 
 def set_invoice_sequences(fiscalyear):
     pool = Pool()
     Sequence = pool.get('ir.sequence.strict')
+    SequenceType = pool.get('ir.sequence.type')
     InvoiceSequence = pool.get('account.fiscalyear.invoice_sequence')
 
-    sequence = Sequence(name=fiscalyear.name, code='account.invoice')
+    sequence_type, = SequenceType.search([
+            ('name', '=', "Invoice"),
+            ], limit=1)
+    sequence = Sequence(name=fiscalyear.name, sequence_type=sequence_type)
     sequence.company = fiscalyear.company
     sequence.save()
     fiscalyear.invoice_sequences = []
@@ -33,7 +40,8 @@ def set_invoice_sequences(fiscalyear):
     return fiscalyear
 
 
-class AccountInvoiceTestCase(ModuleTestCase):
+class AccountInvoiceTestCase(
+        PartyCompanyCheckEraseMixin, CompanyTestMixin, ModuleTestCase):
     'Test AccountInvoice module'
     module = 'account_invoice'
 
@@ -306,6 +314,11 @@ def suite():
             optionflags=doctest.REPORT_ONLY_FIRST_FAILURE))
     suite.addTests(doctest.DocFileSuite(
             'scenario_invoice_alternate_currency_lower_rate.rst',
+            tearDown=doctest_teardown, encoding='utf-8',
+            checker=doctest_checker,
+            optionflags=doctest.REPORT_ONLY_FIRST_FAILURE))
+    suite.addTests(doctest.DocFileSuite(
+            'scenario_invoice_tax_deductible.rst',
             tearDown=doctest_teardown, encoding='utf-8',
             checker=doctest_checker,
             optionflags=doctest.REPORT_ONLY_FIRST_FAILURE))
