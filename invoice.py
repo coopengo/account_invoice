@@ -997,7 +997,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
 
         term_lines = [(self.payment_term_date or today, total)]
         if self.payment_term:
-            payment_date = get_payment_term_computation_date()
+            payment_date = self.get_payment_term_computation_date()
             term_lines = self.payment_term.compute(
                 total, self.company.currency, payment_date)
         remainder_total_currency = total_currency
