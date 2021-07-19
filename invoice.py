@@ -1002,7 +1002,8 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                 total, self.company.currency, payment_date)
         remainder_total_currency = total_currency
         for date, amount in term_lines:
-            if self.type == 'out' and date < today:
+            # JCA : We never want this warning to be triggered
+            if False and self.type == 'out' and date < today:
                 lang = Lang.get()
                 warning_key = 'invoice_payment_term_%d' % self.id
                 if Warning.check(warning_key):
