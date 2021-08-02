@@ -1535,7 +1535,8 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
             if invoice.reconciled:
                 reconciled.append(invoice)
         if reconciled:
-            cls.__queue__.process(reconciled)
+            # cls.__queue__.process(reconciled)
+            cls.process(reconciled)
 
     @classmethod
     @ModelView.button_action('account_invoice.wizard_pay')

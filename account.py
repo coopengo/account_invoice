@@ -350,7 +350,8 @@ class Reconciliation(metaclass=PoolMeta):
     def create(cls, vlist):
         Invoice = Pool().get('account.invoice')
         reconciliations = super(Reconciliation, cls).create(vlist)
-        Invoice.__queue__.process(list(_invoices_to_process(reconciliations)))
+        # Invoice.__queue__.process(list(_invoices_to_process(reconciliations)))
+        Invoice.process(list(_invoices_to_process(reconciliations)))
         return reconciliations
 
     @classmethod
@@ -359,7 +360,8 @@ class Reconciliation(metaclass=PoolMeta):
 
         invoices_to_process = _invoices_to_process(reconciliations)
         super(Reconciliation, cls).delete(reconciliations)
-        Invoice.__queue__.process(list(invoices_to_process))
+        # Invoice.__queue__.process(list(invoices_to_process))
+        Invoice.process(list(invoices_to_process))
 
 
 class RenewFiscalYear(metaclass=PoolMeta):
