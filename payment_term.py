@@ -3,7 +3,7 @@
 from decimal import Decimal
 from dateutil.relativedelta import relativedelta
 
-from sql import Column, Null
+from sql import Column
 
 from trytond.i18n import gettext
 from trytond.model import (
@@ -15,7 +15,7 @@ from trytond.pool import Pool
 from trytond.wizard import Wizard, StateView, Button
 from trytond.config import config
 
-from .exceptions import PaymentTermValidationError, PaymentTermComputeError
+from .exceptions import PaymentTermValidationError
 
 
 class PaymentTerm(DeactivableMixin, ModelSQL, ModelView):
@@ -257,8 +257,8 @@ class PaymentTermLineRelativeDelta(sequence_ordered(), ModelSQL, ModelView):
                 and table_h.column_exist('month')
                 and table_h.column_exist('weekday')):
             migrate_calendar = (
-                table_h.column_is_type('month', 'VARCHAR')
-                or table_h.column_is_type('weekday', 'VARCHAR'))
+                table_h.column_is_type('month', 'VARCHAR', size=None)
+                or table_h.column_is_type('weekday', 'VARCHAR', size=None))
             if migrate_calendar:
                 table_h = cls.__table_handler__(module_name)
                 table_h.column_rename('month', '_temp_month')
