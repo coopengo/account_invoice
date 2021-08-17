@@ -3,8 +3,11 @@
 this repository contains the full copyright notices and license terms. -->
 <tryton>
     <data>
-        <menuitem name="Invoices" parent="account.menu_account"
-            id="menu_invoices" sequence="20"/>
+        <menuitem
+            name="Invoices"
+            parent="account.menu_account"
+            sequence="20"
+            id="menu_invoices"/>
 
         <record model="ir.action.wizard" id="wizard_pay">
             <field name="name">Pay Invoice</field>
@@ -82,8 +85,11 @@ this repository contains the full copyright notices and license terms. -->
             <field name="domain"></field>
             <field name="act_window" ref="act_invoice_out_form"/>
         </record>
-        <menuitem parent="menu_invoices" action="act_invoice_out_form"
-            id="menu_invoice_out_form" sequence="1"/>
+        <menuitem
+            parent="menu_invoices"
+            action="act_invoice_out_form"
+            sequence="10"
+            id="menu_invoice_out_form"/>
 
         <record model="ir.action.act_window" id="act_invoice_in_form">
             <field name="name">Supplier Invoices</field>
@@ -129,8 +135,11 @@ this repository contains the full copyright notices and license terms. -->
             <field name="domain"></field>
             <field name="act_window" ref="act_invoice_in_form"/>
         </record>
-        <menuitem parent="menu_invoices" action="act_invoice_in_form"
-            id="menu_invoice_in_form" sequence="3"/>
+        <menuitem
+            parent="menu_invoices"
+            action="act_invoice_in_form"
+            sequence="10"
+            id="menu_invoice_in_form"/>
 
         <record model="ir.model.access" id="access_invoice">
             <field name="model" search="[('model', '=', 'account.invoice')]"/>
@@ -205,6 +214,15 @@ this repository contains the full copyright notices and license terms. -->
             <field name="button" ref="invoice_pay_button"/>
             <field name="group" ref="account.group_account"/>
         </record>
+        <record model="ir.model.button" id="invoice_process_button">
+            <field name="name">process</field>
+            <field name="string">Process</field>
+            <field name="model" search="[('model', '=', 'account.invoice')]"/>
+        </record>
+        <record model="ir.model.button-res.group" id="invoice_process_button_group_account_admin">
+            <field name="button" ref="invoice_process_button"/>
+            <field name="group" ref="account.group_account_admin"/>
+        </record>
 
         <record model="ir.action.report" id="report_invoice">
             <field name="name">Invoice</field>
@@ -221,7 +239,6 @@ this repository contains the full copyright notices and license terms. -->
 
         <record model="ir.sequence.type" id="sequence_type_account_invoice">
             <field name="name">Invoice</field>
-            <field name="code">account.invoice</field>
         </record>
         <record model="ir.sequence.type-res.group"
             id="sequence_type_account_invoice_group_admin">
@@ -288,22 +305,6 @@ this repository contains the full copyright notices and license terms. -->
             <field name="name">invoice_tax_tree_sequence</field>
         </record>
 
-        <record model="ir.model.access" id="access_invoice_tax">
-            <field name="model" search="[('model', '=', 'account.invoice.tax')]"/>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="False"/>
-            <field name="perm_create" eval="False"/>
-            <field name="perm_delete" eval="False"/>
-        </record>
-        <record model="ir.model.access" id="access_invoice_tax_account">
-            <field name="model" search="[('model', '=', 'account.invoice.tax')]"/>
-            <field name="group" ref="account.group_account"/>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_delete" eval="True"/>
-        </record>
-
         <record model="ir.ui.view" id="pay_start_view_form">
             <field name="model">account.invoice.pay.start</field>
             <field name="type">form</field>
@@ -340,9 +341,23 @@ this repository contains the full copyright notices and license terms. -->
             <field name="view" ref="payment_method_view_form"/>
             <field name="act_window" ref="act_payment_method_form"/>
         </record>
-        <menuitem parent="account.menu_journal_configuration"
+        <menuitem
+            parent="account.menu_journal_configuration"
             action="act_payment_method_form"
+            sequence="50"
             id="menu_payment_method_form"/>
+
+        <record model="ir.rule.group" id="rule_group_payment_method_companies">
+            <field name="name">User in companies</field>
+            <field name="model" search="[('model', '=', 'account.invoice.payment.method')]"/>
+            <field name="global_p" eval="True"/>
+        </record>
+        <record model="ir.rule" id="rule_payment_method_companies">
+            <field name="domain"
+                eval="[('company', 'in', Eval('companies', []))]"
+                pyson="1"/>
+            <field name="rule_group" ref="rule_group_payment_method_companies"/>
+        </record>
 
         <record model="ir.model.access" id="access_payment_method">
             <field name="model" search="[('model', '=', 'account.invoice.payment.method')]"/>
@@ -377,28 +392,28 @@ this repository contains the full copyright notices and license terms. -->
             <field name="action" ref="credit"/>
         </record>
 
-        <record model="ir.rule.group" id="rule_group_invoice">
-            <field name="name">User in company</field>
+        <record model="ir.rule.group" id="rule_group_invoice_companies">
+            <field name="name">User in companies</field>
             <field name="model" search="[('model', '=', 'account.invoice')]"/>
             <field name="global_p" eval="True"/>
         </record>
-        <record model="ir.rule" id="rule_invoice1">
+        <record model="ir.rule" id="rule_invoice_companies">
             <field name="domain"
-                eval="[('company', '=', Eval('user', {}).get('company', None))]"
+                eval="[('company', 'in', Eval('companies', []))]"
                 pyson="1"/>
-            <field name="rule_group" ref="rule_group_invoice"/>
+            <field name="rule_group" ref="rule_group_invoice_companies"/>
         </record>
 
-        <record model="ir.rule.group" id="rule_group_invoice_line">
-            <field name="name">User in company</field>
+        <record model="ir.rule.group" id="rule_group_invoice_line_companies">
+            <field name="name">User in companies</field>
             <field name="model" search="[('model', '=', 'account.invoice.line')]"/>
             <field name="global_p" eval="True"/>
         </record>
-        <record model="ir.rule" id="rule_invoice_line1">
+        <record model="ir.rule" id="rule_invoice_line_companies">
             <field name="domain"
-                eval="[('company', '=', Eval('user', {}).get('company', None))]"
+                eval="[('company', 'in', Eval('companies', []))]"
                 pyson="1"/>
-            <field name="rule_group" ref="rule_group_invoice_line"/>
+            <field name="rule_group" ref="rule_group_invoice_line_companies"/>
         </record>
     </data>
 </tryton>

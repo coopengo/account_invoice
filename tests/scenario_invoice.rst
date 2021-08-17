@@ -17,7 +17,7 @@ Imports::
     ...     set_fiscalyear_invoice_sequences
     >>> today = datetime.date.today()
 
-Install account_invoice::
+Activate modules::
 
     >>> config = activate_modules('account_invoice')
 
@@ -78,7 +78,8 @@ Create payment method::
 Create Write Off method::
 
     >>> WriteOff = Model.get('account.move.reconcile.write_off')
-    >>> sequence_journal, = Sequence.find([('code', '=', 'account.journal')])
+    >>> sequence_journal, = Sequence.find(
+    ...     [('sequence_type.name', '=', "Account Journal")], limit=1)
     >>> journal_writeoff = Journal(name='Write-Off', type='write-off',
     ...     sequence=sequence_journal)
     >>> journal_writeoff.save()
@@ -217,8 +218,14 @@ Credit invoice with refund::
     >>> credit.execute('credit')
     >>> invoice.reload()
     >>> invoice.state
-    'cancel'
+    'cancelled'
     >>> invoice.reconciled == today
+    True
+    >>> credit_note, = Invoice.find([
+    ...     ('type', '=', 'out'), ('id', '!=', invoice.id)])
+    >>> credit_note.state
+    'paid'
+    >>> all(line.taxes_date == today for line in credit_note.lines)
     True
     >>> receivable.reload()
     >>> receivable.debit
