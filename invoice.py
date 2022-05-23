@@ -257,6 +257,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
     @classmethod
     def __setup__(cls):
         super(Invoice, cls).__setup__()
+        cls.create_date.select = True
         cls._check_modify_exclude = {
             'state', 'payment_lines', 'move', 'cancel_move',
             'invoice_report_cache', 'invoice_report_format', 'lines'}
@@ -347,9 +348,6 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
 
         # Migration from 4.0: Drop not null on payment_term
         table.not_null_action('payment_term', 'remove')
-
-        # Add index on create_date
-        table.index_action('create_date', action='add')
 
         # Migration from 5.6: rename state cancel to cancelled
         cursor.execute(*sql_table.update(
@@ -941,35 +939,35 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         for tax in self.taxes:
             move_lines += tax.get_move_lines()
 
-        total = Decimal('0.0')
-        total_currency = Decimal('0.0')
-        for line in move_lines:
-            total += line.debit - line.credit
-            if line.amount_second_currency:
-                total_currency += line.amount_second_currency
-
-        term_lines = [(self.payment_term_date or today, total)]
+        total = sum(l.debit - l.credit for l in move_lines)
         if self.payment_term:
             payment_date = self.get_payment_term_computation_date()
             term_lines = self.payment_term.compute(
                 total, self.company.currency, payment_date)
-        remainder_total_currency = total_currency
+        else:
+            term_lines = [(self.payment_term_date or today, total)]
+        if self.currency != self.company.currency:
+            remainder_total_currency = self.total_amount.copy_sign(total)
+        else:
+            remainder_total_currency = 0
+        past_payment_term_dates = []
         for date, amount in term_lines:
-            # JCA : We never want this warning to be triggered
-            if False and self.type == 'out' and date < today:
-                lang = Lang.get()
-                warning_key = 'invoice_payment_term_%d' % self.id
-                if Warning.check(warning_key):
-                    raise InvoicePaymentTermDateWarning(warning_key,
-                        gettext('account_invoice'
-                            '.msg_invoice_payment_term_date_past',
-                            invoice=self.rec_name,
-                            date=lang.strftime(date)))
-
             line = self._get_move_line(date, amount)
             if line.amount_second_currency:
                 remainder_total_currency += line.amount_second_currency
             move_lines.append(line)
+            if self.type == 'out' and date < today:
+                past_payment_term_dates.append(date)
+        # JCA : We never want this warning to be triggered
+        if False:
+            lang = Lang.get()
+            warning_key = 'invoice_payment_term_%d' % self.id
+            if Warning.check(warning_key):
+                raise InvoicePaymentTermDateWarning(warning_key,
+                    gettext('account_invoice'
+                        '.msg_invoice_payment_term_date_past',
+                        invoice=self.rec_name,
+                        date=lang.strftime(min(past_payment_term_dates))))
         if not self.currency.is_zero(remainder_total_currency):
             move_lines[-1].amount_second_currency -= \
                 remainder_total_currency
@@ -1203,6 +1201,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         default.setdefault('payment_lines', None)
         default.setdefault('invoice_date', None)
         default.setdefault('accounting_date', None)
+        default.setdefault('payment_term_date', None)
         default.setdefault('lines_to_pay', None)
         return super(Invoice, cls).copy(invoices, default=default)
 
@@ -1530,7 +1529,7 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
         to_save = []
         for invoice in invoices:
             if invoice.move or invoice.number:
-                if invoice.move.state == 'draft':
+                if invoice.move and invoice.move.state == 'draft':
                     delete_moves.append(invoice.move)
                 elif not invoice.cancel_move:
                     if (invoice.type == 'out'
@@ -1539,9 +1538,10 @@ class Invoice(Workflow, ModelSQL, ModelView, TaxableMixin):
                             gettext('account_invoice'
                                 '.msg_invoice_customer_cancel_move',
                                 invoice=invoice.rec_name))
-                    invoice.cancel_move = invoice.move.cancel()
-                    to_save.append(invoice)
-                    cancel_moves.append(invoice.cancel_move)
+                    if invoice.move:
+                        invoice.cancel_move = invoice.move.cancel()
+                        to_save.append(invoice)
+                        cancel_moves.append(invoice.cancel_move)
         if cancel_moves:
             Move.save(cancel_moves)
         cls.save(to_save)
@@ -2314,7 +2314,7 @@ class InvoiceLine(sequence_ordered(), ModelSQL, ModelView, TaxableMixin):
                     gettext('account_invoice.msg_invoice_same_account_line',
                         account=self.account.rec_name,
                         invoice=self.invoice.rec_name,
-                        line=self.rec_name))
+                        lines=self.rec_name))
 
     def _compute_taxes(self):
         pool = Pool()
@@ -2525,10 +2525,11 @@ class InvoiceTax(sequence_ordered(), ModelSQL, ModelView):
         with Transaction().set_context(**context):
             tax = Tax(self.tax.id)
         self.description = tax.description
-        if self.base >= 0:
-            self.account = tax.invoice_account
-        else:
-            self.account = tax.credit_note_account
+        if self.base is not None:
+            if self.base >= 0:
+                self.account = tax.invoice_account
+            else:
+                self.account = tax.credit_note_account
 
     @fields.depends('tax', 'base', 'amount', 'manual', 'invoice',
         '_parent_invoice.currency')
@@ -2549,8 +2550,10 @@ class InvoiceTax(sequence_ordered(), ModelSQL, ModelView):
     @property
     def _key(self):
         # Same as _TaxKey
-        tax_id = self.tax.id if self.tax else -1
-        return (self.account.id, tax_id, self.base >= 0)
+        tax_id = self.tax.id if getattr(self, 'tax', None) else -1
+        account_id = (
+            self.account.id if getattr(self, 'account', None) else None)
+        return (account_id, tax_id, (getattr(self, 'base', 0) or 0) >= 0)
 
     @classmethod
     def check_modify(cls, taxes):
@@ -2596,6 +2599,20 @@ class InvoiceTax(sequence_ordered(), ModelSQL, ModelView):
                     gettext('account_invoice.msg_invoice_tax_create',
                         invoice=invoice.rec_name))
         return super(InvoiceTax, cls).create(vlist)
+
+    @classmethod
+    def validate(cls, taxes):
+        super().validate(taxes)
+        for tax in taxes:
+            tax.check_same_account()
+
+    def check_same_account(self):
+        if self.account == self.invoice.account:
+            raise InvoiceTaxValidationError(
+                gettext('account_invoice.msg_invoice_same_account_line',
+                    account=self.account.rec_name,
+                    invoice=self.invoice.rec_name,
+                    line=self.rec_name))
 
     def get_move_lines(self):
         '''
@@ -2715,7 +2732,7 @@ class InvoiceReport(Report):
         if invoice.invoice_report_cache:
             return (
                 invoice.invoice_report_format,
-                bytes(invoice.invoice_report_cache))
+                invoice.invoice_report_cache)
         else:
             result = super()._execute(records, header, data, action)
             # If the invoice is posted or paid and the report not saved in
@@ -2723,6 +2740,8 @@ class InvoiceReport(Report):
             # now in invoice_report_cache
             if invoice.state in {'posted', 'paid'} and invoice.type == 'out':
                 format_, data = result
+                if isinstance(data, str):
+                    data = bytes(data, 'utf-8')
                 invoice.invoice_report_format = format_
                 invoice.invoice_report_cache = \
                     Invoice.invoice_report_cache.cast(data)
