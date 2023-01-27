@@ -2,6 +2,7 @@
 # this repository contains the full copyright notices and license terms.
 from decimal import Decimal
 from collections import OrderedDict
+from itertools import islice
 
 from sql import Literal
 from sql.conditionals import Coalesce
@@ -12,6 +13,8 @@ from trytond.pyson import Eval, If, Bool
 from trytond.pool import Pool, PoolMeta
 from trytond.tools import grouped_slice
 from trytond.transaction import Transaction
+
+from .exceptions import CancelInvoiceMoveWarning
 
 
 class FiscalYear(metaclass=PoolMeta):
@@ -387,3 +390,34 @@ class RenewFiscalYear(metaclass=PoolMeta):
         if to_write:
             InvoiceSequence.write(*to_write)
         return fiscalyear
+
+
+class CancelMoves(metaclass=PoolMeta):
+    __name__ = 'account.move.cancel'
+
+    def transition_cancel(self):
+        pool = Pool()
+        Invoice = pool.get('account.invoice')
+        Warning = pool.get('res.user.warning')
+
+        moves_w_invoices = {
+            m: m.origin for m in self.records
+            if (isinstance(m.origin, Invoice)
+                and m.origin.state not in {'paid', 'cancelled'})}
+        if moves_w_invoices:
+            move_names = ', '.join(m.rec_name
+                for m in islice(moves_w_invoices, None, 5))
+            invoice_names = ', '.join(i.rec_name
+                for i in islice(moves_w_invoices.values(), None, 5))
+            if len(moves_w_invoices) > 5:
+                move_names += '...'
+                invoice_names += '...'
+            key = Warning.format('cancel_invoice_move', moves_w_invoices)
+            if Warning.check(key):
+                raise CancelInvoiceMoveWarning(key,
+                    gettext('account_invoice.msg_cancel_invoice_move',
+                        moves=move_names, invoices=invoice_names),
+                    gettext(
+                        'account_invoice.msg_cancel_invoice_move_description'))
+
+        return super().transition_cancel()

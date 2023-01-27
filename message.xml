@@ -66,6 +66,12 @@ this repository contains the full copyright notices and license terms. -->
         <record model="ir.message" id="msg_invoice_payment_line_unique">
             <field name="text">A payment line can be linked to only one invoice.</field>
         </record>
+        <record model="ir.message" id="msg_cancel_invoice_move">
+            <field name="text">The moves "%(moves)s" have the posted invoices "%(invoices)s" as origin.</field>
+        </record>
+        <record model="ir.message" id="msg_cancel_invoice_move_description">
+            <field name="text">Cancelling them will reconcile the move lines thus paying the invoices. You might want to cancel the invoices first.</field>
+        </record>
     </data>
 </tryton>
 

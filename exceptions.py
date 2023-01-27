@@ -31,3 +31,7 @@ class InvoiceLineValidationError(ValidationError):
 
 class PayInvoiceError(UserError):
     pass
+
+
+class CancelInvoiceMoveWarning(UserWarning):
+    pass
