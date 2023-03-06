@@ -1,3 +1,5 @@
+* Warn when cancelling a move related to an invoice
+
 Version 6.4.2 - 2022-08-17
 * Bug fixes (see mercurial logs for details)
 
