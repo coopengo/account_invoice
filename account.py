@@ -15,12 +15,10 @@ from trytond.pool import Pool, PoolMeta
 from trytond.tools import grouped_slice
 from trytond.transaction import Transaction
 
-<<<<<<< HEAD
 from trytond.modules.account.exceptions import ClosePeriodError
 from trytond.modules.company.model import CompanyValueMixin
-=======
+
 from .exceptions import CancelInvoiceMoveWarning
->>>>>>> 14e1579 (Warn when cancelling a move related to an invoice [PREVIEW])
 
 
 class Configuration(metaclass=PoolMeta):
