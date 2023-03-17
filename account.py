@@ -13,6 +13,7 @@ from trytond.pyson import Eval, If, Bool
 from trytond.pool import Pool, PoolMeta
 from trytond.tools import grouped_slice
 from trytond.transaction import Transaction
+from trytond.i18n import gettext
 
 from .exceptions import CancelInvoiceMoveWarning
 
@@ -399,9 +400,11 @@ class CancelMoves(metaclass=PoolMeta):
         pool = Pool()
         Invoice = pool.get('account.invoice')
         Warning = pool.get('res.user.warning')
+        Move =  pool.get('account.move')
 
+        moves = Move.browse(Transaction().context['active_ids'])
         moves_w_invoices = {
-            m: m.origin for m in self.records
+            m: m.origin for m in moves
             if (isinstance(m.origin, Invoice)
                 and m.origin.state not in {'paid', 'cancelled'})}
         if moves_w_invoices:
@@ -412,7 +415,8 @@ class CancelMoves(metaclass=PoolMeta):
             if len(moves_w_invoices) > 5:
                 move_names += '...'
                 invoice_names += '...'
-            key = Warning.format('cancel_invoice_move', moves_w_invoices)
+            key = 'cancel_invoice_move%s' % str([
+                    x.id for x in moves_w_invoices.keys()])
             if Warning.check(key):
                 raise CancelInvoiceMoveWarning(key,
                     gettext('account_invoice.msg_cancel_invoice_move',
